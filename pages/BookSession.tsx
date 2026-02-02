@@ -14,6 +14,36 @@ interface BookSessionProps {
     onLoginReq: () => void;
 }
 
+// ---------------------------------------------------
+// Geofencing Logic
+// ---------------------------------------------------
+const SERVICE_ZONES = [
+    { name: 'HSR Layout', lat: 12.9121, lng: 77.6446 },
+    { name: 'Bellandur', lat: 12.9260, lng: 77.6762 },
+    { name: 'Sarjapur - Wipro', lat: 12.9165, lng: 77.6737 },
+    { name: 'Sarjapur - Fire Station', lat: 12.9255, lng: 77.6705 } 
+];
+const MAX_RADIUS_KM = 1.0; 
+
+// Haversine formula to calculate distance
+const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2-lat1); 
+    var dLon = deg2rad(lon2-lon1); 
+    var a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2)
+        ; 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var d = R * c; // Distance in km
+    return d;
+}
+
+const deg2rad = (deg: number) => {
+    return deg * (Math.PI/180)
+}
+
 export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfile, onLoginReq }) => {
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -29,6 +59,9 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     const [isProcessing, setIsProcessing] = useState(false);
     const [locLoading, setLocLoading] = useState(false);
     
+    // Validated Coordinates for Geofencing
+    const [userCoords, setUserCoords] = useState<{ lat: number, lng: number } | null>(null);
+
     // Form Data
     const [formData, setFormData] = useState({
         name: userProfile?.name || '',
@@ -59,6 +92,13 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [step]);
+
+    // Reset coords if user manually types address to force re-verification
+    const handleAddressChange = (newAddress: string) => {
+        setFormData(prev => ({ ...prev, address: newAddress }));
+        // If user modifies address, we clear coords so we can re-geocode/check on Next
+        setUserCoords(null); 
+    };
 
     // --- Active Package Check ---
     if (userProfile?.activePackage?.isActive) {
@@ -143,15 +183,21 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
     const availableSlots = generateSlots(selectedDate);
 
-    // --- Steps Logic ---
-
-    const checkServiceability = (address: string) => {
-        const serviceable = ['sarjapur', 'hsr', 'bellandur'];
-        const lowerAddr = address.toLowerCase();
-        return serviceable.some(loc => lowerAddr.includes(loc));
+    // --- Check Serviceability (Geofence) ---
+    const checkServiceability = (lat: number, lng: number): boolean => {
+        for (const zone of SERVICE_ZONES) {
+            const dist = getDistanceFromLatLonInKm(lat, lng, zone.lat, zone.lng);
+            if (dist <= MAX_RADIUS_KM) {
+                console.log(`Matched zone: ${zone.name} (${dist.toFixed(2)}km)`);
+                return true;
+            }
+        }
+        return false;
     };
 
-    const handleNext = () => {
+    // --- Steps Logic ---
+
+    const handleNext = async () => {
         if (step === 1) {
             if (bookingType === 'SESSION') {
                 if (!selectedCategory) { showToast("Please select a workout type", "error"); return; }
@@ -159,15 +205,54 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                 if (!selectedPackageId) { showToast("Please select a package", "error"); return; }
             }
 
-            // Step 1 now includes Location check
             if (!formData.address) {
                 showToast("Please enter your location to proceed", "error");
                 return;
             }
-            if (!checkServiceability(formData.address)) {
-                showToast("Sorry, we are currently unserviceable in your area. We serve Sarjapur, HSR, Bellandur.", "error");
+
+            // GEOFENCING CHECK
+            let validLocation = false;
+            let currentCoords = userCoords;
+
+            setIsProcessing(true); // Re-use loading state for geocoding check
+
+            try {
+                // If we don't have coords (manual entry), try to geocode
+                if (!currentCoords) {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}&addressdetails=1&limit=1`);
+                    const results = await response.json();
+                    
+                    if (results && results.length > 0) {
+                        const lat = parseFloat(results[0].lat);
+                        const lng = parseFloat(results[0].lon);
+                        currentCoords = { lat, lng };
+                        setUserCoords(currentCoords);
+                    } else {
+                        showToast("Could not verify this address. Please try 'Detect' button.", "error");
+                        setIsProcessing(false);
+                        return;
+                    }
+                }
+
+                // Check distance
+                if (currentCoords) {
+                    validLocation = checkServiceability(currentCoords.lat, currentCoords.lng);
+                }
+
+                if (!validLocation) {
+                    showToast("Sorry, we are currently unserviceable in your area. We serve Sarjapur, HSR, Bellandur.", "error");
+                    setIsProcessing(false);
+                    return;
+                }
+
+            } catch (e) {
+                showToast("Location verification failed. Please try 'Detect'.", "error");
+                setIsProcessing(false);
                 return;
             }
+            
+            setIsProcessing(false);
+
             if (!currentUser) {
                 onLoginReq();
                 return;
@@ -212,6 +297,10 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         setLocLoading(true);
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
+            
+            // Set Coords immediately
+            setUserCoords({ lat: latitude, lng: longitude });
+
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'en-US' } });
                 const data = await response.json();
@@ -533,7 +622,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                 <textarea 
                                     placeholder="Enter your Area (e.g. HSR Layout)" 
                                     value={formData.address} 
-                                    onChange={e=>setFormData({...formData, address: e.target.value})} 
+                                    onChange={e=>handleAddressChange(e.target.value)} 
                                     className="input-field bg-white min-h-[60px] resize-none" 
                                 />
                                 <p className="text-[10px] text-gray-400 mt-2">Currently serving: Sarjapur, HSR, Bellandur</p>
@@ -688,7 +777,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                         </div>
                                     </div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Full Address *</label>
-                                    <textarea placeholder="Street Address / Landmark" value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} className="input-field bg-white min-h-[60px] resize-none mt-1" />
+                                    <textarea placeholder="Street Address / Landmark" value={formData.address} onChange={e=>handleAddressChange(e.target.value)} className="input-field bg-white min-h-[60px] resize-none mt-1" />
                                 </div>
                             </div>
                         </div>

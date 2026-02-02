@@ -1,8 +1,8 @@
 
 import { Booking, UserProfile, UserPackage } from '../types';
 
-// UPDATED URL from your latest deployment
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyajFJHK6GJwYmcKrLGwLsXEd2iRFdIGzg-NZETDXA8fMCc-iziSBqqTNJ8sCvQuLOQ/exec'; 
+// UPDATED URL
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwpz6HHadySp6TnIQuBPfqFuc57yAcaKPcyP1RukAr8ugrSKXPWi5F1bpFfygIokWDl/exec'; 
 
 export const submitBookingToSheet = async (booking: Booking, user: UserProfile | null) => {
   if (!SHEET_API_URL || !SHEET_API_URL.includes('/exec')) {

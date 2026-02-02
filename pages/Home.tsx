@@ -217,55 +217,6 @@ export const Home: React.FC = () => {
         </div>
       </RevealOnScroll>
 
-      {/* WHAT HAPPENS IN A SESSION */}
-      <RevealOnScroll delay={250}>
-        <div className="px-6 md:px-8 mb-16 md:mb-20">
-            <div className="bg-white rounded-[40px] p-8 md:p-12 shadow-soft border border-gray-100 overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -mr-20 -mt-20"></div>
-                
-                <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                    <div className="flex-1">
-                        <span className="text-primary font-black text-xl uppercase tracking-widest mb-4 block">Experience</span>
-                        <h2 className="text-3xl md:text-5xl font-extrabold text-secondary mb-6 leading-tight">What happens in a Zuryo session?</h2>
-                        <div className="space-y-6">
-                            <div className="flex gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 font-bold text-xl">1</div>
-                                <div>
-                                    <h4 className="font-bold text-lg text-secondary">Arrival & Setup</h4>
-                                    <p className="text-gray-500 text-sm">Trainer arrives with equipment and sets up in your space.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 font-bold text-xl">2</div>
-                                <div>
-                                    <h4 className="font-bold text-lg text-secondary">Assessment & Warmup</h4>
-                                    <p className="text-gray-500 text-sm">Quick health check and dynamic warmup to prep your body.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center shrink-0 font-bold text-xl">3</div>
-                                <div>
-                                    <h4 className="font-bold text-lg text-secondary">The Workout</h4>
-                                    <p className="text-gray-500 text-sm">A tailored 45-min session focusing on your goals and continues with the training.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex-1 w-full">
-                        <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl">
-                            <img src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" alt="Session" />
-                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white">
-                                    <Play fill="currentColor" size={24} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-      </RevealOnScroll>
-
       {/* SUCCESS STORIES SECTION */}
       <RevealOnScroll delay={300}>
         <div className="mb-16 md:mb-20 max-w-full overflow-hidden relative">
