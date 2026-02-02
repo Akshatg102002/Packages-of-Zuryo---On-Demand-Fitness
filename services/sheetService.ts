@@ -17,22 +17,32 @@ export const submitBookingToSheet = async (booking: Booking, user: UserProfile |
   const year = dateObj.getFullYear();
   const formattedDate = `${day}/${month}/${year}`;
 
+  // Priority: Booking (Form Data) > User Profile > Fallback
+  // Keys match Sheet Columns roughly (CamelCase for script consumption)
   const payload = {
-    action: "create_booking", // Explicit action
+    action: "create_booking",
     id: booking.id,
     date: formattedDate,
     time: booking.time,
     category: booking.category,
+    customerName: booking.userName || user?.name || 'Guest',
+    customerPhone: booking.userPhone || user?.phoneNumber || 'N/A',
+    location: booking.location,
     status: booking.status,
-    price: booking.price,
     trainerName: booking.trainerName,
-    userName: user?.name || booking.userName || 'Guest',
-    userPhone: user?.phoneNumber || booking.userPhone || 'N/A',
+    price: booking.price,
+    paymentId: booking.paymentId || 'N/A',
+    historyNotes: booking.sessionNotes || 'New Booking',
+    
+    // Legacy support fields just in case
+    userName: booking.userName || user?.name || 'Guest',
+    userPhone: booking.userPhone || user?.phoneNumber || 'N/A',
     address: booking.location,
     apartment: booking.apartmentName || '',
-    flat: booking.flatNo || '',
-    paymentId: booking.paymentId || 'N/A'
+    flat: booking.flatNo || ''
   };
+
+  console.log("Submitting Payload to Sheet:", payload);
 
   try {
     // Send as JSON text/plain to avoid CORS preflight issues in some envs
@@ -44,7 +54,7 @@ export const submitBookingToSheet = async (booking: Booking, user: UserProfile |
       },
       body: JSON.stringify(payload)
     });
-    console.log("Booking submitted to sheet (blind mode)");
+    console.log("Booking submitted to sheet successfully");
   } catch (error) {
     console.error("Error submitting to sheet:", error);
   }
@@ -108,7 +118,7 @@ export const submitPackageToSheet = async (user: UserProfile, pkg: UserPackage) 
     if (!SHEET_API_URL) return;
 
     const payload = {
-        action: "purchase_package", // Script should handle this action and route to new tab
+        action: "purchase_package", 
         uid: user.uid,
         userName: user.name,
         userPhone: user.phoneNumber,
