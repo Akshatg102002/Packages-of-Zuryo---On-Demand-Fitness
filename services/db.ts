@@ -1,0 +1,136 @@
+
+import { db, auth } from './firebase';
+import firebase from 'firebase/compat/app';
+import { Booking, UserProfile, AssessmentData, SessionLog, UserPackage } from '../types';
+
+// --- User Profile Operations ---
+
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  try {
+    const docSnap = await db.collection("users").doc(uid).get();
+    if (docSnap.exists) {
+      return docSnap.data() as UserProfile;
+    }
+    return null;
+  } catch (e) {
+    console.error("Error fetching profile", e);
+    return null;
+  }
+};
+
+export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
+  try {
+    await db.collection("users").doc(profile.uid).set(profile, { merge: true });
+  } catch (e) {
+    console.error("Error saving profile", e);
+    throw e;
+  }
+};
+
+export const saveUserPackage = async (userId: string, pkg: UserPackage): Promise<void> => {
+  try {
+    // We update the activePackage field on the user profile
+    await db.collection("users").doc(userId).update({
+        activePackage: pkg
+    });
+  } catch (e) {
+    console.error("Error saving package", e);
+    throw e;
+  }
+};
+
+export const checkPhoneDuplicate = async (phoneNumber: string, currentUid: string): Promise<boolean> => {
+  try {
+    const querySnapshot = await db.collection("users").where("phoneNumber", "==", phoneNumber).get();
+    if (querySnapshot.empty) return false;
+    let isDuplicate = false;
+    querySnapshot.forEach((doc) => {
+        if (doc.id !== currentUid) isDuplicate = true;
+    });
+    return isDuplicate;
+  } catch (e) {
+    console.error("Error checking phone", e);
+    return false;
+  }
+};
+
+// --- Booking Operations ---
+
+export const addBooking = async (booking: Booking): Promise<void> => {
+  try {
+    await db.collection("bookings").doc(booking.id).set(booking);
+  } catch (e) {
+    console.error("Error adding booking", e);
+    throw e;
+  }
+};
+
+export const getBookings = async (uid: string): Promise<Booking[]> => {
+  try {
+    const snap = await db.collection("bookings").where("userId", "==", uid).get();
+    const data = snap.docs.map(doc => doc.data() as Booking);
+    return data.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (e) {
+    console.error("Error fetching bookings", e);
+    return [];
+  }
+};
+
+export const cancelBooking = async (bookingId: string): Promise<void> => {
+  try {
+    await db.collection("bookings").doc(bookingId).update({ status: 'cancelled' });
+  } catch (e) {
+    console.error("Error cancelling booking", e);
+  }
+};
+
+// --- Trainer Portal Operations ---
+
+export const getTrainerProfile = async (uid: string): Promise<any | null> => {
+  try {
+    const docSnap = await db.collection("trainers").doc(uid).get();
+    if (docSnap.exists) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (e) {
+    console.error("Error fetching trainer profile", e);
+    return null;
+  }
+};
+
+// MODIFIED: Now accepts email and queries trainerEmail field
+export const getTrainerBookings = async (trainerEmail: string): Promise<Booking[]> => {
+    try {
+        if (!trainerEmail) return [];
+        // Ensure lowercase for comparison
+        const emailToQuery = trainerEmail.toLowerCase().trim();
+        const snap = await db.collection("bookings").where("trainerEmail", "==", emailToQuery).get();
+        
+        const data = snap.docs.map(doc => {
+            const d = doc.data() as Booking;
+            // Ensure ID is set from doc.id if missing
+            return { ...d, id: doc.id };
+        });
+        return data.sort((a, b) => b.createdAt - a.createdAt);
+    } catch(e) {
+        console.error("Error fetching trainer bookings", e);
+        return [];
+    }
+};
+
+export const markBookingCompleted = async (bookingId: string): Promise<void> => {
+    await db.collection("bookings").doc(bookingId).update({ status: 'completed' });
+};
+
+export const saveAssessment = async (userId: string, assessment: AssessmentData): Promise<void> => {
+    await db.collection("users").doc(userId).update({ latestAssessment: assessment });
+};
+
+export const saveSessionLog = async (userId: string, log: SessionLog): Promise<void> => {
+    await db.collection("users").doc(userId).update({ sessionHistory: firebase.firestore.FieldValue.arrayUnion(log) });
+};
+
+export const logoutUser = async (): Promise<void> => {
+  await auth.signOut();
+};

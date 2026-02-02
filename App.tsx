@@ -1,0 +1,227 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Switch, Route, useLocation, Redirect } from 'react-router-dom';
+import { Booking, UserProfile } from './types';
+import { BottomNav, TopNav } from './components/BottomNav';
+import { Home } from './pages/Home';
+import { Trainers } from './pages/Trainers';
+import { Bookings } from './pages/Bookings';
+import { Profile } from './pages/Profile';
+import { BookSession } from './pages/BookSession';
+import { About, Contact, Policies, Terms, RefundPolicy, POSHPolicy } from './pages/StaticPages';
+import { TrainerPortal } from './pages/TrainerPortal';
+import { ResetPassword } from './pages/ResetPassword';
+import { Onboarding } from './components/Onboarding';
+import { Auth } from './components/Auth';
+import { Footer } from './components/Footer';
+import { getUserProfile, logoutUser } from './services/db';
+import { auth } from './services/firebase';
+import firebase from 'firebase/compat/app';
+import { X, Loader2 } from 'lucide-react';
+import { ToastProvider } from './components/ToastContext';
+
+// Razorpay global
+declare global { interface Window { Razorpay: any; } }
+
+const SplashScreen = () => (
+    <div className="fixed inset-0 z-[200] bg-secondary flex flex-col items-center justify-center animate-out fade-out duration-700 delay-2000 fill-mode-forwards pointer-events-none">
+        <div className="relative flex items-center justify-center">
+            {/* Outer Ring */}
+            <div className="absolute w-48 h-48 border-2 border-white/5 rounded-full"></div>
+            
+            {/* Spinning Rings */}
+            <div className="absolute w-32 h-32 border-4 border-primary/20 rounded-full"></div>
+            <div className="absolute w-32 h-32 border-t-4 border-primary rounded-full animate-[spin_1s_linear_infinite]"></div>
+            
+            {/* Text Logo */}
+            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter relative z-10 select-none">
+                ZURYO
+            </h1>
+        </div>
+        <div className="mt-8 flex flex-col items-center gap-2">
+            <div className="h-1 w-20 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-primary w-full animate-[translateX_1s_ease-in-out_infinite]"></div>
+            </div>
+            <span className="text-primary/80 font-bold text-[10px] tracking-[0.4em] uppercase">
+                On Demand Fitness
+            </span>
+        </div>
+    </div>
+);
+
+// Scroll To Top Component
+const ScrollToTop = () => {
+    const { pathname } = useLocation();
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+    return null;
+};
+
+// Page Transition Loader
+const PageLoader = () => {
+    const location = useLocation();
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        setLoading(true);
+        const timer = setTimeout(() => setLoading(false), 600); // Simulate network/render delay
+        return () => clearTimeout(timer);
+    }, [location.pathname]);
+
+    if (!loading) return null;
+
+    return (
+        <div className="fixed inset-0 z-[90] bg-white/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+            <div className="bg-white p-4 rounded-full shadow-2xl">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        </div>
+    );
+};
+
+const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const location = useLocation();
+    // Hide navbars on onboarding or specific routes if needed
+    const showNav = location.pathname !== '/onboarding' && location.pathname !== '/reset-password'; 
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col font-sans w-full overflow-hidden select-none text-secondary">
+             {showNav && <TopNav />}
+             
+             {/* Adjusted top padding for desktop. Added pb-28 for mobile to clear Fixed Bottom Nav */}
+             <main className="flex-1 w-full h-screen overflow-y-auto no-scrollbar md:pt-28 pb-28 md:pb-0 scroll-smooth relative">
+                {children}
+                <Footer />
+             </main>
+
+             {showNav && <BottomNav />}
+        </div>
+    );
+};
+
+export const App: React.FC = () => {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState<firebase.User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
+
+  // --- Auth & Init ---
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        setCurrentUser(user);
+        if (user) {
+            const profile = await getUserProfile(user.uid);
+            if (profile) {
+                setUserProfile(profile);
+            }
+        } else {
+            setUserProfile(null);
+        }
+        setAuthChecking(false);
+    });
+    return () => {
+        clearTimeout(timer);
+        unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+      await logoutUser();
+      setUserProfile(null);
+  };
+
+  const openAuth = () => setShowAuthModal(true);
+
+  if (authChecking) return null;
+
+  return (
+    <ToastProvider>
+        <BrowserRouter>
+        <ScrollToTop />
+        {showSplash && <SplashScreen />}
+        {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
+        
+        <AppLayout>
+            <PageLoader />
+            <Switch>
+                <Route exact path="/">
+                    <Home />
+                </Route>
+                <Route path="/book">
+                    <BookSession 
+                        currentUser={currentUser} 
+                        userProfile={userProfile} 
+                        onLoginReq={openAuth} 
+                    />
+                </Route>
+                <Route path="/trainers">
+                    <Trainers />
+                </Route>
+                <Route path="/bookings">
+                    <Bookings onLoginReq={openAuth} />
+                </Route>
+                <Route path="/profile">
+                    <Profile 
+                        onLogout={handleLogout} 
+                        onLoginReq={openAuth} 
+                    />
+                </Route>
+                <Route path="/trainer-portal">
+                    <TrainerPortal />
+                </Route>
+                <Route path="/reset-password">
+                    <ResetPassword />
+                </Route>
+                
+                {/* Static Pages */}
+                <Route path="/about-us">
+                    <About />
+                </Route>
+                <Route path="/contact">
+                    <Contact />
+                </Route>
+                <Route path="/terms">
+                    <Terms />
+                </Route>
+                <Route path="/privacy-policy">
+                    <Policies />
+                </Route>
+                <Route path="/refund-policy">
+                    <RefundPolicy />
+                </Route>
+                <Route path="/posh-policy">
+                    <POSHPolicy />
+                </Route>
+
+                <Route path="*">
+                    <Redirect to="/" />
+                </Route>
+            </Switch>
+        </AppLayout>
+
+        {/* Auth Modal */}
+        {showAuthModal && (
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden relative shadow-2xl animate-in zoom-in-95 duration-200">
+                    <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 z-50 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-secondary hover:bg-gray-100 transition-colors">
+                        <X size={18} />
+                    </button>
+                    <div className="max-h-[90vh] overflow-y-auto">
+                        <Auth 
+                            onLoginSuccess={() => setShowAuthModal(false)} 
+                            onTrainerLogin={() => {
+                                setShowAuthModal(false);
+                                window.location.href = '/trainer-portal'; 
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+        )}
+        </BrowserRouter>
+    </ToastProvider>
+  );
+};
