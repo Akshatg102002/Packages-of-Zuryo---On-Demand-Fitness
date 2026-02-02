@@ -5,7 +5,7 @@ import { Booking, UserProfile, UserPackage } from '../types';
 import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage } from '../services/db';
 import { submitBookingToSheet, submitPackageToSheet } from '../services/sheetService';
 import firebase from 'firebase/compat/app';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 
 interface BookSessionProps {
@@ -15,7 +15,7 @@ interface BookSessionProps {
 }
 
 export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfile, onLoginReq }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     
     // Booking Type State: 'SESSION' (default) or 'PACKAGE'
@@ -85,7 +85,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                         <div className="h-full bg-primary" style={{width: `${(userProfile.activePackage.sessionsUsed/userProfile.activePackage.totalSessions)*100}%`}}></div>
                     </div>
                 </div>
-                <button onClick={() => history.push('/profile')} className="text-primary font-bold text-sm underline">
+                <button onClick={() => navigate('/profile')} className="text-primary font-bold text-sm underline">
                     View Package Details
                 </button>
             </div>
@@ -343,7 +343,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         
         showToast("Booking Confirmed! 🎉", "success");
         setIsProcessing(false);
-        history.push('/bookings');
+        navigate('/bookings');
     };
 
     const finalizePackagePurchase = async (paymentId: string, pkg: { id: string, name: string, price: number, sessions: number }) => {
@@ -369,7 +369,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
         showToast("Package Purchased Successfully! 🎉", "success");
         setIsProcessing(false);
-        history.push('/profile'); // Redirect to profile to see package
+        navigate('/profile'); // Redirect to profile to see package
     };
 
     // Calculate highlighting for Next button

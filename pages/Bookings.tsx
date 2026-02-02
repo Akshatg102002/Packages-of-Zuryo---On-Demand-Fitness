@@ -4,14 +4,14 @@ import { Booking } from '../types';
 import { getBookings, cancelBooking } from '../services/db';
 import { auth } from '../services/firebase';
 import { useToast } from '../components/ToastContext';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface BookingsProps {
     onLoginReq?: () => void;
 }
 
 export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
       if(confirm('Rescheduling involves cancelling this slot and booking a new one. Proceed?')) {
           await cancelBooking(id);
           showToast("Previous slot cancelled. Please choose a new time.", "success");
-          history.push('/book');
+          navigate('/book');
       }
   };
 
@@ -125,7 +125,7 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
                 </p>
                 
                 {activeTab === 'upcoming' && (
-                    <div className="text-primary font-bold flex items-center gap-2 text-sm animate-pulse cursor-pointer" onClick={() => history.push('/book')}>
+                    <div className="text-primary font-bold flex items-center gap-2 text-sm animate-pulse cursor-pointer" onClick={() => navigate('/book')}>
                         Head to Home to Book <ArrowRight size={16}/>
                     </div>
                 )}

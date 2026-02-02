@@ -1,9 +1,9 @@
 import React from 'react';
 import { Home, CalendarCheck, UserCircle, Users, Zap } from 'lucide-react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const BottomNav: React.FC = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -24,7 +24,7 @@ export const BottomNav: React.FC = () => {
         return (
             <button
             key={item.path}
-            onClick={() => history.push(item.path)}
+            onClick={() => navigate(item.path)}
             className={`flex flex-col items-center justify-center space-y-1.5 w-14 transition-all duration-300 ${
                 isActive ? 'text-primary translate-y-[-2px]' : 'text-gray-400 hover:text-white'
             }`}
@@ -40,7 +40,7 @@ export const BottomNav: React.FC = () => {
 
 // Desktop Top Navbar variant
 export const TopNav: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const location = useLocation();
     const currentPath = location.pathname;
 
@@ -56,7 +56,7 @@ export const TopNav: React.FC = () => {
 
     return (
         <div className="hidden md:flex items-center justify-between w-full h-24 bg-[#142B5D] fixed left-0 top-0 px-10 z-50 shadow-2xl rounded-b-[40px] border-b border-white/5 mx-auto max-w-[1920px]">
-            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => history.push('/')}>
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
                  <div className="w-12 h-12 bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg overflow-hidden backdrop-blur-sm group-hover:scale-105 transition-transform">
                     <img src="https://www.karmisalon.com/wp-content/uploads/2026/01/Zuryo_L.webp" alt="Zuryo" className="w-full h-full object-contain" />
                 </div>
@@ -71,7 +71,7 @@ export const TopNav: React.FC = () => {
                     return (
                         <button
                             key={item.path}
-                            onClick={() => history.push(item.path)}
+                            onClick={() => navigate(item.path)}
                             className={`flex items-center space-x-2 text-sm font-bold tracking-wide transition-all duration-300 px-5 py-3 rounded-xl ${
                                 isActive 
                                 ? 'text-secondary bg-primary shadow-lg shadow-primary/20' 

@@ -4,11 +4,11 @@ import { Booking, AssessmentData, UserProfile, SessionLog } from '../types';
 import { getTrainerBookings, getUserProfile, saveAssessment, saveSessionLog, markBookingCompleted, getTrainerProfile } from '../services/db';
 import { updateSessionCompletion } from '../services/sheetService';
 import { auth, db } from '../services/firebase';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 
 export const TrainerPortal: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [trainerName, setTrainerName] = useState<string>(''); 
@@ -88,11 +88,11 @@ export const TrainerPortal: React.FC = () => {
         setCurrentUser(null);
         setTrainerName('');
         setTrainerEmail('');
-        history.push('/'); 
+        navigate('/'); 
     };
 
     if (view === 'AUTH') {
-        return <TrainerAuth onLogin={() => { /* State handled by auth listener */ }} onBack={() => history.push('/')} />;
+        return <TrainerAuth onLogin={() => { /* State handled by auth listener */ }} onBack={() => navigate('/')} />;
     }
 
     if (view === 'SESSION' && selectedBooking && clientProfile) {
