@@ -210,45 +210,66 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                 return;
             }
 
-            // GEOFENCING CHECK
+            // GEOFENCING & VALIDATION CHECK
             let validLocation = false;
             let currentCoords = userCoords;
 
-            setIsProcessing(true); // Re-use loading state for geocoding check
+            setIsProcessing(true);
+
+            // 1. Text Keyword Check (Fast Pass - Loose)
+            // Allows users to proceed if they type recognized areas even if geocoding/gps fails
+            const lowerAddr = formData.address.toLowerCase();
+            const allowedKeywords = ['sarjapur', 'hsr', 'bellandur'];
+            const hasKeywordMatch = allowedKeywords.some(k => lowerAddr.includes(k));
 
             try {
-                // If we don't have coords (manual entry), try to geocode
+                // 2. Geocoding (Try to get coords for DB, even if keyword matched)
                 if (!currentCoords) {
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}&addressdetails=1&limit=1`);
-                    const results = await response.json();
-                    
-                    if (results && results.length > 0) {
-                        const lat = parseFloat(results[0].lat);
-                        const lng = parseFloat(results[0].lon);
-                        currentCoords = { lat, lng };
-                        setUserCoords(currentCoords);
-                    } else {
-                        showToast("Could not verify this address. Please try 'Detect' button.", "error");
-                        setIsProcessing(false);
-                        return;
+                    // Only try geocoding if address length is reasonable to avoid API spam on short strings
+                    if (formData.address.length > 3) {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}&addressdetails=1&limit=1`);
+                        const results = await response.json();
+                        
+                        if (results && results.length > 0) {
+                            const lat = parseFloat(results[0].lat);
+                            const lng = parseFloat(results[0].lon);
+                            currentCoords = { lat, lng };
+                            setUserCoords(currentCoords);
+                        }
                     }
                 }
 
-                // Check distance
+                // 3. Radius Check (Strict)
+                let insideRadius = false;
                 if (currentCoords) {
-                    validLocation = checkServiceability(currentCoords.lat, currentCoords.lng);
+                    insideRadius = checkServiceability(currentCoords.lat, currentCoords.lng);
+                }
+
+                // 4. Combined Validation
+                // We allow if it's explicitly inside radius OR if it matches keywords (User request: "unrestrict location to include any above keywords")
+                if (insideRadius || hasKeywordMatch) {
+                    validLocation = true;
+                } else {
+                    // Explicit failure
+                    validLocation = false;
                 }
 
                 if (!validLocation) {
-                    showToast("Sorry, we are currently unserviceable in your area. We serve Sarjapur, HSR, Bellandur.", "error");
+                    showToast("We currently serve Sarjapur, HSR, and Bellandur. Please check your address.", "error");
                     setIsProcessing(false);
                     return;
                 }
 
             } catch (e) {
-                showToast("Location verification failed. Please try 'Detect'.", "error");
-                setIsProcessing(false);
-                return;
+                console.warn("Location verification error", e);
+                // Fallback: If logic failed but keyword exists, allow it.
+                if (hasKeywordMatch) {
+                    validLocation = true;
+                } else {
+                    showToast("Could not verify location. Please use the 'Detect' button or ensure address mentions service areas.", "error");
+                    setIsProcessing(false);
+                    return;
+                }
             }
             
             setIsProcessing(false);
