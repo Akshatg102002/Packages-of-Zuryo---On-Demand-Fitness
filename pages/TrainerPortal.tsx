@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, User as UserIcon, MapPin, CheckCircle, Save, Mail, Briefcase, Star, ArrowRight, Activity, Zap, ClipboardList, History, Phone, Home, LogOut, LayoutDashboard, Ruler, Move, Lock, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User as UserIcon, MapPin, CheckCircle, Save, Mail, Briefcase, Star, ArrowRight, Activity, Zap, ClipboardList, History, Phone, Home, LogOut, LayoutDashboard, Ruler, Move, Lock, RefreshCw, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Booking, AssessmentData, UserProfile, SessionLog } from '../types';
 import { getTrainerBookings, getUserProfile, saveAssessment, saveSessionLog, markBookingCompleted, getTrainerProfile } from '../services/db';
 import { updateSessionCompletion } from '../services/sheetService';
@@ -95,7 +95,6 @@ export const TrainerPortal: React.FC = () => {
     const getNextSession = () => {
         const confirmed = myBookings.filter(b => b.status === 'confirmed');
         // Sort ascending by date (Nearest future date first)
-        // Since API returns descending creation time, we need to sort by actual slot time
         return confirmed.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
     };
 
@@ -257,8 +256,6 @@ export const TrainerPortal: React.FC = () => {
         </div>
     );
 };
-
-// ... (Auth Code and Helpers remain same as previous, SessionView updated below)
 
 const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName: string, onClose: () => void }> = ({ booking, client, trainerName, onClose }) => {
     const { showToast } = useToast();
@@ -454,27 +451,21 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
     );
 };
 
-// ... Rest of components (TrainerAuth, AssessmentWizard, etc.) unchanged ...
-// Helper functions (same as before)
-const AssessmentWizard: React.FC<{ initialData: AssessmentData, isLocked: boolean, onSave: (d: AssessmentData) => void }> = ({ initialData, isLocked, onSave }) => {
-    // ... AssessmentWizard implementation (omitted for brevity, unchanged) ...
-    // Assuming this component is present as defined in previous implementation
-    // Placeholder to keep file compilable in single response block
-    return null; 
-};
-const SessionHistoryThread: React.FC<{ logs: SessionLog[] }> = ({ logs }) => {
-    // ... SessionHistoryThread implementation (omitted for brevity, unchanged) ...
-    return null;
-};
+// ---------------------------
+// SUB COMPONENTS
+// ---------------------------
+
 const NavButton = ({ label, icon: Icon, active, onClick }: any) => (
     <button onClick={onClick} className={`flex flex-col items-center justify-center space-y-1.5 w-16 transition-all duration-300 ${active ? 'text-primary translate-y-[-2px]' : 'text-gray-400 hover:text-secondary'}`}>
         <Icon size={24} strokeWidth={active ? 2.5 : 2} />
         <span className={`text-[10px] font-bold transition-opacity ${active ? 'opacity-100' : 'opacity-80'}`}>{label}</span>
     </button>
 );
+
 const TabButton = ({ label, active, onClick, highlight }: any) => (
     <button onClick={onClick} className={`flex-1 py-3 px-4 text-xs font-black uppercase tracking-wide rounded-xl transition-all whitespace-nowrap ${active ? (highlight ? 'bg-red-500 text-white' : 'bg-secondary text-white shadow-md') : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>{label}</button>
 );
+
 const InfoCard = ({ title, value, icon }: any) => (
     <div className="bg-white p-5 rounded-[20px] border border-gray-50 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
         <div className="mt-1 text-primary bg-primary/5 p-2 rounded-lg">{icon}</div>
@@ -484,4 +475,273 @@ const InfoCard = ({ title, value, icon }: any) => (
         </div>
     </div>
 );
-const TrainerAuth: React.FC<{ onLogin: (user: any) => void, onBack: () => void }> = ({ onLogin, onBack }) => { return null; }; // Placeholder
+
+// --- TRAINER AUTH ---
+const TrainerAuth: React.FC<{ onLogin: (user: any) => void, onBack: () => void }> = ({ onLogin, onBack }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        try {
+            await auth.signInWithEmailAndPassword(email.trim(), password);
+            // Auth listener in parent will handle the state update to DASHBOARD
+        } catch (err: any) {
+            console.error(err);
+            setError("Invalid credentials or access denied.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center p-6 bg-secondary relative overflow-hidden">
+            {/* Background */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -mr-16 -mt-16"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-[80px] -ml-16 -mb-16"></div>
+
+            <div className="w-full max-w-sm bg-white rounded-[32px] p-8 shadow-2xl relative z-10 animate-in fade-in zoom-in duration-300">
+                <button onClick={onBack} className="mb-6 text-gray-400 hover:text-secondary flex items-center gap-1 text-xs font-bold uppercase tracking-widest"><ArrowLeft size={14}/> Back to Home</button>
+                
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center text-primary font-black text-2xl mx-auto mb-4 shadow-lg">Z</div>
+                    <h1 className="text-2xl font-black text-secondary">Trainer Portal</h1>
+                    <p className="text-gray-400 text-xs font-medium mt-1">Authorized Personnel Only</p>
+                </div>
+
+                <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Trainer Email</label>
+                        <input 
+                            type="email" 
+                            required 
+                            value={email} 
+                            onChange={e => setEmail(e.target.value)} 
+                            className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 font-bold text-secondary outline-none focus:border-primary"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            required 
+                            value={password} 
+                            onChange={e => setPassword(e.target.value)} 
+                            className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 font-bold text-secondary outline-none focus:border-primary"
+                        />
+                    </div>
+
+                    {error && <div className="text-red-500 text-xs font-bold text-center bg-red-50 p-3 rounded-lg">{error}</div>}
+
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="w-full bg-secondary text-white py-4 rounded-xl font-bold shadow-xl shadow-secondary/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+                    >
+                        {loading ? <Loader2 size={18} className="animate-spin"/> : 'Access Dashboard'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// --- ASSESSMENT WIZARD ---
+const AssessmentWizard: React.FC<{ initialData: AssessmentData, isLocked: boolean, onSave: (d: AssessmentData) => void }> = ({ initialData, isLocked, onSave }) => {
+    const [data, setData] = useState<AssessmentData>(initialData);
+    const [step, setStep] = useState(1); // 1: Vitals, 2: Fitness, 3: Goals
+
+    const updateField = (category: keyof AssessmentData, field: string, value: any) => {
+        if(isLocked) return;
+        setData(prev => ({
+            ...prev,
+            [category]: {
+                ...prev[category],
+                [field]: value
+            }
+        } as AssessmentData));
+    };
+
+    if (isLocked) {
+        return (
+            <div className="bg-white rounded-[32px] p-8 text-center border border-gray-100 shadow-soft">
+                <Lock size={48} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="text-xl font-bold text-secondary">Assessment Locked</h3>
+                <p className="text-sm text-gray-500 mt-2 mb-6">An assessment has already been filed for this client.</p>
+                <div className="bg-gray-50 p-4 rounded-xl text-left text-xs font-medium text-gray-600 space-y-2">
+                    <p><strong>Conditions:</strong> {data.medicalConditions.join(', ') || 'None'}</p>
+                    <p><strong>Goal:</strong> {data.goals.primary}</p>
+                    <p><strong>Fitness Level:</strong> {data.fitnessLevel.category}</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white rounded-[32px] p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-black text-secondary">New Assessment</h2>
+                <div className="flex gap-1">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className={`w-8 h-1 rounded-full ${step >= i ? 'bg-primary' : 'bg-gray-100'}`}></div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                {step === 1 && (
+                    <div className="animate-in slide-in-from-right duration-300 space-y-4">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Vitals & Health</h3>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="label">Height (cm)</label>
+                                <input type="text" className="input" value={data.measurements?.height || ''} onChange={e => updateField('measurements', 'height', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="label">Weight (kg)</label>
+                                <input type="text" className="input" value={data.measurements?.weight || ''} onChange={e => updateField('measurements', 'weight', e.target.value)} />
+                            </div>
+                        </div>
+
+                        <div>
+                             <label className="label">Medical Conditions</label>
+                             <div className="flex flex-wrap gap-2">
+                                 {['Diabetes', 'BP', 'Asthma', 'None'].map(cond => (
+                                     <button 
+                                        key={cond} 
+                                        onClick={() => {
+                                            const current = data.medicalConditions || [];
+                                            const updated = current.includes(cond) ? current.filter(c => c !== cond) : [...current, cond];
+                                            setData({...data, medicalConditions: updated});
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${data.medicalConditions?.includes(cond) ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+                                     >
+                                         {cond}
+                                     </button>
+                                 ))}
+                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div className="animate-in slide-in-from-right duration-300 space-y-4">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Fitness Level</h3>
+                         
+                         <div>
+                            <label className="label">Current Activity Level</label>
+                            <select className="input" value={data.lifestyle.movement} onChange={e => updateField('lifestyle', 'movement', e.target.value)}>
+                                <option value="Low">Low (Sedentary)</option>
+                                <option value="Moderate">Moderate</option>
+                                <option value="High">High (Active)</option>
+                            </select>
+                         </div>
+
+                         <div>
+                            <label className="label">Categorized Level</label>
+                            <div className="flex gap-2">
+                                {['Beginner', 'Intermediate', 'Advanced'].map(lvl => (
+                                    <button 
+                                        key={lvl}
+                                        onClick={() => updateField('fitnessLevel', 'category', lvl)}
+                                        className={`flex-1 py-3 rounded-xl font-bold text-xs border ${data.fitnessLevel.category === lvl ? 'bg-secondary text-white border-secondary' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
+                                    >
+                                        {lvl}
+                                    </button>
+                                ))}
+                            </div>
+                         </div>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div className="animate-in slide-in-from-right duration-300 space-y-4">
+                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Goals & Notes</h3>
+                         
+                         <div>
+                             <label className="label">Primary Goal</label>
+                             <input type="text" className="input" value={data.goals.primary} onChange={e => updateField('goals', 'primary', e.target.value)} placeholder="e.g. Weight Loss" />
+                         </div>
+
+                         <div>
+                             <label className="label">Trainer Notes (Internal)</label>
+                             <textarea 
+                                className="input h-24 resize-none" 
+                                value={data.trainerNotes?.behavioralNotes || ''} 
+                                onChange={e => updateField('trainerNotes', 'behavioralNotes', e.target.value)} 
+                                placeholder="Client specific needs..." 
+                             />
+                         </div>
+                    </div>
+                )}
+
+                <div className="flex justify-between pt-4 mt-4 border-t border-gray-50">
+                    {step > 1 ? (
+                        <button onClick={() => setStep(s => s-1)} className="text-gray-400 font-bold text-xs uppercase tracking-wide">Back</button>
+                    ) : <div></div>}
+                    
+                    {step < 3 ? (
+                        <button onClick={() => setStep(s => s+1)} className="bg-secondary text-white px-6 py-3 rounded-xl font-bold text-sm shadow-md">Next Step</button>
+                    ) : (
+                        <button onClick={() => onSave(data)} className="bg-green-500 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-md flex items-center gap-2">
+                            <Save size={16} /> Save Assessment
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- SESSION HISTORY THREAD ---
+const SessionHistoryThread: React.FC<{ logs: SessionLog[] }> = ({ logs }) => {
+    if (!logs || logs.length === 0) {
+        return (
+            <div className="text-center py-12 bg-gray-50 rounded-[32px] border border-dashed border-gray-200">
+                <History className="mx-auto text-gray-300 mb-2" size={32} />
+                <p className="text-gray-400 font-bold text-sm">No session history found.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {logs.slice().reverse().map((log, idx) => (
+                <div key={idx} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm relative pl-8">
+                    {/* Timeline Line */}
+                    <div className="absolute top-0 bottom-0 left-4 w-0.5 bg-gray-100"></div>
+                    <div className="absolute top-6 left-[13px] w-2.5 h-2.5 rounded-full bg-primary border-2 border-white"></div>
+                    
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                                {new Date(log.date).toLocaleDateString()}
+                            </p>
+                            <h4 className="font-bold text-secondary text-sm">Trainer: {log.trainerName}</h4>
+                        </div>
+                        <span className="text-[10px] bg-gray-50 px-2 py-1 rounded text-gray-500 font-bold">
+                            {log.comfortLevel}
+                        </span>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-xl text-xs text-gray-600 leading-relaxed mb-2">
+                        <p className="font-bold text-gray-400 text-[10px] uppercase mb-1">Activities</p>
+                        {log.activitiesDone}
+                    </div>
+
+                    {log.focusForNext && (
+                         <div className="flex items-start gap-2 mt-2">
+                             <ArrowRight size={12} className="text-primary mt-0.5" />
+                             <p className="text-xs font-bold text-secondary">Next Focus: <span className="font-medium text-gray-500">{log.focusForNext}</span></p>
+                         </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+};
