@@ -130,6 +130,23 @@ export const getTrainerProfile = async (uid: string): Promise<any | null> => {
   }
 };
 
+export const getAllTrainers = async (): Promise<any[]> => {
+    try {
+        // Assuming trainers are stored in 'trainers' collection or identified in users
+        // Since we don't have a strict 'trainers' collection populated in this demo flow apart from types, 
+        // we will fetch from 'trainers' collection if it exists, or fallback to constants if empty for demo.
+        const snap = await db.collection("trainers").get();
+        if (snap.empty) {
+             // In a real app, this returns empty. For the sake of the Admin UI working in this demo state:
+             return []; 
+        }
+        return snap.docs.map(doc => ({ ...doc.data(), uid: doc.id }));
+    } catch (e) {
+        console.error("Error fetching trainers", e);
+        return [];
+    }
+};
+
 // Modified to search by Email OR Name
 export const getTrainerBookings = async (trainerEmail: string, trainerName?: string): Promise<Booking[]> => {
     try {
