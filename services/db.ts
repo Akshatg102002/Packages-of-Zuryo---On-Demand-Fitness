@@ -132,18 +132,50 @@ export const getTrainerProfile = async (uid: string): Promise<any | null> => {
 
 export const getAllTrainers = async (): Promise<any[]> => {
     try {
-        // Assuming trainers are stored in 'trainers' collection or identified in users
-        // Since we don't have a strict 'trainers' collection populated in this demo flow apart from types, 
-        // we will fetch from 'trainers' collection if it exists, or fallback to constants if empty for demo.
         const snap = await db.collection("trainers").get();
         if (snap.empty) {
-             // In a real app, this returns empty. For the sake of the Admin UI working in this demo state:
              return []; 
         }
         return snap.docs.map(doc => ({ ...doc.data(), uid: doc.id }));
     } catch (e) {
         console.error("Error fetching trainers", e);
         return [];
+    }
+};
+
+export const createTrainerAccount = async (name: string, email: string, pass: string): Promise<void> => {
+    // Hack: Initialize a secondary app to create a user without logging out the admin
+    const config = {
+        apiKey: "AIzaSyBrjDlJeHPo66cf8EpM0YQjXSsjmighNXU",
+        authDomain: "zuryo-2f32a.firebaseapp.com",
+        projectId: "zuryo-2f32a",
+        storageBucket: "zuryo-2f32a.firebasestorage.app",
+        messagingSenderId: "1061685847140",
+        appId: "1:1061685847140:web:2d2a120bd0775fb0132b71"
+    };
+    
+    // Check if app already initialized
+    let secondaryApp = firebase.apps.find(app => app.name === "SecondaryApp");
+    if (!secondaryApp) {
+        secondaryApp = firebase.initializeApp(config, "SecondaryApp");
+    }
+
+    try {
+        const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
+        if (userCred.user) {
+            await userCred.user.updateProfile({ displayName: name });
+            // Create in 'trainers' collection
+            await db.collection("trainers").doc(userCred.user.uid).set({
+                name,
+                email,
+                specialties: ["General Fitness"], // Default
+                createdAt: new Date().toISOString()
+            });
+        }
+        await secondaryApp.auth().signOut();
+    } catch (e) {
+        console.error("Error creating trainer", e);
+        throw e;
     }
 };
 
@@ -177,8 +209,11 @@ export const getTrainerBookings = async (trainerEmail: string, trainerName?: str
     }
 };
 
-export const markBookingCompleted = async (bookingId: string): Promise<void> => {
-    await db.collection("bookings").doc(bookingId).update({ status: 'completed' });
+export const markBookingCompleted = async (bookingId: string, log: string): Promise<void> => {
+    await db.collection("bookings").doc(bookingId).update({ 
+        status: 'completed',
+        sessionLog: log
+    });
 };
 
 export const saveAssessment = async (userId: string, assessment: AssessmentData): Promise<void> => {

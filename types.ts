@@ -27,7 +27,7 @@ export interface SessionLog {
 
 // Updated Assessment Structure per JSON requirement
 export interface AssessmentData {
-  // A. Basic Profile
+  // A. Basic Profile (Optional in Wizard, fetched from DB)
   basic: {
     fullName: string;
     age: string;
@@ -137,7 +137,8 @@ export interface Booking {
   userName?: string;
   userPhone?: string;
 
-  sessionNotes?: string;
+  sessionNotes?: string; // History Notes (From previous session)
+  sessionLog?: string;   // Current Session Log (Filled by trainer upon completion)
   paymentId?: string;
   createdAt: number;
 }

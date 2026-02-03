@@ -331,7 +331,8 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
                 focusForNext: assessment.goals.sessionOutcome.nextSessionFocus
             };
             await saveSessionLog(client.uid, finalLog);
-            await markBookingCompleted(booking.id);
+            // UPDATED: Pass activitiesDone to markBookingCompleted so it shows in Admin 'Session Log'
+            await markBookingCompleted(booking.id, closureLog.activitiesDone || '');
             await updateSessionCompletion(booking.id, closureLog.activitiesDone || '');
             
             // Auto-save assessment one last time

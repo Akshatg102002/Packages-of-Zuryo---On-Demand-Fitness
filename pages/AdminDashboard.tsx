@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock } from 'lucide-react';
-import { getAllBookings, getAllUsers, updateBooking, getAllTrainers } from '../services/db';
+import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key } from 'lucide-react';
+import { getAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount } from '../services/db';
 import { Booking, UserProfile } from '../types';
 import { useToast } from '../components/ToastContext';
 import { MOCK_TRAINERS } from '../constants';
@@ -56,7 +56,7 @@ export const AdminDashboard: React.FC = () => {
 };
 
 const AuthenticatedDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS'>('BOOKINGS');
+    const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS' | 'TRAINERS'>('BOOKINGS');
     
     return (
         <div className="h-screen flex flex-col bg-gray-50 font-sans text-secondary overflow-hidden">
@@ -84,11 +84,19 @@ const AuthenticatedDashboard: React.FC = () => {
                     >
                         <Users size={14} /> Users
                     </button>
+                    <button 
+                        onClick={() => setActiveTab('TRAINERS')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'TRAINERS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                    >
+                        <Briefcase size={14} /> Trainers
+                    </button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-hidden relative">
-                {activeTab === 'BOOKINGS' ? <BookingsManager /> : <UsersManager />}
+                {activeTab === 'BOOKINGS' ? <BookingsManager /> : 
+                 activeTab === 'USERS' ? <UsersManager /> : 
+                 <TrainersManager />}
             </div>
         </div>
     );
@@ -119,11 +127,10 @@ const BookingsManager = () => {
             getAllTrainers()
         ]);
         setBookings(bookingsData);
-        // Merge DB trainers with Mock trainers for demo purposes so dropdown isn't empty if DB is fresh
+        // Merge DB trainers with Mock trainers for demo purposes
         const dbTrainerEmails = new Set(trainersData.map(t => t.email));
         const combinedTrainers = [...trainersData];
         MOCK_TRAINERS.forEach(mt => {
-             // Mock trainers don't usually have emails in constants, generating fake ones for mapping
              const email = `${mt.name.split(' ')[0].toLowerCase()}@zuryo.co`;
              if (!dbTrainerEmails.has(email)) {
                  combinedTrainers.push({
@@ -184,7 +191,7 @@ const BookingsManager = () => {
     };
 
     const exportCSV = () => {
-        const headers = ["ID", "Date", "Time", "Category", "Customer Name", "Customer Phone", "Location", "Status", "Trainer Name", "Trainer Email", "Price", "Payment ID", "History Notes"];
+        const headers = ["ID", "Date", "Time", "Category", "Customer Name", "Customer Phone", "Location", "Status", "Trainer Name", "Trainer Email", "Price", "Payment ID", "History Notes", "Session Log"];
         const csvContent = [
             headers.join(","),
             ...bookings.map(b => [
@@ -200,7 +207,8 @@ const BookingsManager = () => {
                 `"${b.trainerEmail || ''}"`,
                 b.price,
                 b.paymentId || '',
-                `"${b.sessionNotes || ''}"`
+                `"${b.sessionNotes || ''}"`,
+                `"${b.sessionLog || ''}"`
             ].join(","))
         ].join("\n");
 
@@ -275,8 +283,8 @@ const BookingsManager = () => {
                             <th className="p-3 w-48 border-r border-gray-200">Trainer (Name/Email)</th>
                             <th className="p-3 w-20 border-r border-gray-200">Price</th>
                             <th className="p-3 w-32 border-r border-gray-200">Payment ID</th>
-                            <th className="p-3 w-32 border-r border-gray-200">History Notes</th>
-                            <th className="p-3 w-24 text-center">Session Log</th>
+                            <th className="p-3 w-40 border-r border-gray-200">History Notes</th>
+                            <th className="p-3 w-40 text-center">Session Log</th>
                             <th className="p-3 w-16 text-center sticky right-0 bg-gray-100 shadow-[-4px_0_4px_-2px_rgba(0,0,0,0.1)]">Action</th>
                         </tr>
                     </thead>
@@ -342,13 +350,13 @@ const BookingsManager = () => {
 
                                     <td className="p-3 border-r border-gray-100 font-mono">₹{b.price}</td>
                                     <td className="p-3 border-r border-gray-100 font-mono text-[10px] text-gray-400 truncate max-w-[100px]" title={b.paymentId}>{b.paymentId || '-'}</td>
-                                    <td className="p-3 border-r border-gray-100 truncate max-w-[150px]" title={b.sessionNotes}>{b.sessionNotes || '-'}</td>
-                                    <td className="p-3 text-center border-r border-gray-100">
-                                        {b.status === 'completed' ? (
-                                            <span className="text-green-600 font-bold text-[10px]">Logged</span>
-                                        ) : (
-                                            <span className="text-gray-300">-</span>
-                                        )}
+                                    
+                                    {/* Text Areas for History and Log */}
+                                    <td className="p-2 border-r border-gray-100">
+                                        <textarea readOnly className="w-full h-16 text-[10px] bg-gray-50 border border-gray-100 rounded p-1 resize-none outline-none focus:bg-white" value={b.sessionNotes || ''}></textarea>
+                                    </td>
+                                    <td className="p-2 text-center border-r border-gray-100">
+                                        <textarea readOnly className="w-full h-16 text-[10px] bg-green-50 border border-green-100 text-green-900 rounded p-1 resize-none outline-none focus:bg-white" value={b.sessionLog || ''}></textarea>
                                     </td>
 
                                     {/* Action Buttons */}
@@ -370,6 +378,118 @@ const BookingsManager = () => {
                     </tbody>
                 </table>
             </div>
+        </div>
+    );
+};
+
+// --- TRAINERS MANAGER ---
+const TrainersManager = () => {
+    const { showToast } = useToast();
+    const [trainers, setTrainers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    
+    const [newTrainer, setNewTrainer] = useState({ name: '', email: '', password: '' });
+    const [creating, setCreating] = useState(false);
+
+    const loadTrainers = async () => {
+        setLoading(true);
+        const data = await getAllTrainers();
+        setTrainers(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        loadTrainers();
+    }, []);
+
+    const handleCreateTrainer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreating(true);
+        try {
+            await createTrainerAccount(newTrainer.name, newTrainer.email, newTrainer.password);
+            showToast("Trainer account created successfully!", "success");
+            setNewTrainer({ name: '', email: '', password: '' });
+            setShowCreateForm(false);
+            loadTrainers();
+        } catch(e: any) {
+            showToast(e.message || "Failed to create trainer", "error");
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    return (
+        <div className="flex h-full">
+            {/* List */}
+            <div className="flex-1 bg-white flex flex-col">
+                <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 className="font-bold text-secondary text-lg">Registered Trainers</h2>
+                    <button 
+                        onClick={() => setShowCreateForm(true)} 
+                        className="bg-secondary text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-primary hover:text-secondary transition-colors"
+                    >
+                        <Plus size={14} /> Add Trainer
+                    </button>
+                </div>
+                <div className="flex-1 overflow-auto p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {trainers.map((t, idx) => (
+                            <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex items-start gap-4">
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-bold text-primary shadow-sm">
+                                    {t.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-secondary">{t.name}</h3>
+                                    <p className="text-xs text-gray-500">{t.email}</p>
+                                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded mt-2 inline-block font-bold uppercase">Active</span>
+                                </div>
+                            </div>
+                        ))}
+                        {trainers.length === 0 && !loading && (
+                            <div className="col-span-3 text-center text-gray-400 py-10">No trainers found.</div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Create Modal */}
+            {showCreateForm && (
+                <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-xl text-secondary">New Trainer Account</h3>
+                            <button onClick={() => setShowCreateForm(false)} className="p-2 hover:bg-gray-100 rounded-full"><XCircle size={20} className="text-gray-400"/></button>
+                        </div>
+                        <form onSubmit={handleCreateTrainer} className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase">Trainer Name</label>
+                                <div className="relative mt-1">
+                                    <Briefcase size={16} className="absolute left-3 top-3 text-gray-400" />
+                                    <input type="text" required className="w-full pl-10 p-2.5 bg-gray-50 border rounded-lg text-sm font-bold" placeholder="John Doe" value={newTrainer.name} onChange={e => setNewTrainer({...newTrainer, name: e.target.value})} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase">Email Address (Login ID)</label>
+                                <div className="relative mt-1">
+                                    <Mail size={16} className="absolute left-3 top-3 text-gray-400" />
+                                    <input type="email" required className="w-full pl-10 p-2.5 bg-gray-50 border rounded-lg text-sm font-bold" placeholder="trainer@zuryo.co" value={newTrainer.email} onChange={e => setNewTrainer({...newTrainer, email: e.target.value})} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase">Set Password</label>
+                                <div className="relative mt-1">
+                                    <Key size={16} className="absolute left-3 top-3 text-gray-400" />
+                                    <input type="password" required minLength={6} className="w-full pl-10 p-2.5 bg-gray-50 border rounded-lg text-sm font-bold" placeholder="******" value={newTrainer.password} onChange={e => setNewTrainer({...newTrainer, password: e.target.value})} />
+                                </div>
+                            </div>
+                            <button type="submit" disabled={creating} className="w-full bg-secondary text-white py-3 rounded-xl font-bold hover:bg-primary hover:text-secondary transition-colors mt-4">
+                                {creating ? 'Creating Account...' : 'Create Account'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

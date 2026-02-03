@@ -28,12 +28,12 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
         });
     };
 
+    // Removed Profile Step
     const steps = [
-        { id: 1, title: 'Profile', section: 'A' },
-        { id: 2, title: 'Health', section: 'B' },
-        { id: 3, title: 'Body', section: 'C' },
-        { id: 4, title: 'Evaluation', section: 'D-G' },
-        { id: 5, title: 'Goals', section: 'H-K' }
+        { id: 1, title: 'Health', section: 'B' },
+        { id: 2, title: 'Body', section: 'C' },
+        { id: 3, title: 'Evaluation', section: 'D-G' },
+        { id: 4, title: 'Goals', section: 'H-K' }
     ];
 
     return (
@@ -62,34 +62,8 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
 
             <div className="space-y-6 min-h-[300px]">
                 
-                {/* SECTION A: BASIC PROFILE */}
-                {step === 1 && (
-                    <div className="animate-in slide-in-from-right duration-300 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputGroup label="Full Name" value={data.basic?.fullName} onChange={v => updateDeep(['basic', 'fullName'], v)} disabled={isLocked} />
-                            <InputGroup label="Age" value={data.basic?.age} onChange={v => updateDeep(['basic', 'age'], v)} disabled={isLocked} type="number" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputGroup label="Gender" value={data.basic?.gender} onChange={v => updateDeep(['basic', 'gender'], v)} disabled={isLocked} />
-                            <InputGroup label="Contact" value={data.basic?.contactNumber} onChange={v => updateDeep(['basic', 'contactNumber'], v)} disabled={isLocked} />
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-xl">
-                            <label className="label">Address Details</label>
-                            <div className="grid grid-cols-2 gap-3 mb-3">
-                                <input placeholder="Apartment Name" className="input" value={data.basic?.address?.apartmentName || ''} onChange={e => updateDeep(['basic', 'address', 'apartmentName'], e.target.value)} disabled={isLocked} />
-                                <input placeholder="Tower/Block" className="input" value={data.basic?.address?.towerBlock || ''} onChange={e => updateDeep(['basic', 'address', 'towerBlock'], e.target.value)} disabled={isLocked} />
-                            </div>
-                            <input placeholder="Flat No" className="input" value={data.basic?.address?.flatNo || ''} onChange={e => updateDeep(['basic', 'address', 'flatNo'], e.target.value)} disabled={isLocked} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputGroup label="First Session" value={data.basic?.dateOfFirstSession} onChange={v => updateDeep(['basic', 'dateOfFirstSession'], v)} disabled={isLocked} type="date" />
-                            <InputGroup label="Trainer Name" value={data.basic?.trainerName} onChange={v => updateDeep(['basic', 'trainerName'], v)} disabled={isLocked} />
-                        </div>
-                    </div>
-                )}
-
                 {/* SECTION B: HEALTH */}
-                {step === 2 && (
+                {step === 1 && (
                     <div className="animate-in slide-in-from-right duration-300 space-y-4">
                         <MultiSelect 
                             label="Medical Conditions" 
@@ -130,7 +104,7 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                 )}
 
                 {/* SECTION C: BODY MEASUREMENTS */}
-                {step === 3 && (
+                {step === 2 && (
                     <div className="animate-in slide-in-from-right duration-300 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <InputGroup label="Height (cm)" value={data.body?.height} onChange={v => updateDeep(['body', 'height'], v)} disabled={isLocked} type="number" />
@@ -152,7 +126,7 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                 )}
 
                 {/* SECTION D-G: TRAINER EVALUATION */}
-                {step === 4 && (
+                {step === 3 && (
                     <div className="animate-in slide-in-from-right duration-300 space-y-4 h-[400px] overflow-y-auto pr-2">
                         <SelectGroup label="Posture" options={["Neutral", "Forward Head", "Rounded Shoulders", "APT", "Other"]} value={data.evaluation?.posture} onChange={v => updateDeep(['evaluation', 'posture'], v)} disabled={isLocked} />
                         <SelectGroup label="Balance" options={["Stable", "Slight Imbalance", "Poor"]} value={data.evaluation?.balance} onChange={v => updateDeep(['evaluation', 'balance'], v)} disabled={isLocked} />
@@ -183,7 +157,7 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                 )}
 
                 {/* SECTION H-K: GOALS & OUTCOMES */}
-                {step === 5 && (
+                {step === 4 && (
                     <div className="animate-in slide-in-from-right duration-300 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <SelectGroup label="Category" options={["Beginner", "Intermediate", "Advanced"]} value={data.goals?.fitnessCategory} onChange={v => updateDeep(['goals', 'fitnessCategory'], v)} disabled={isLocked} />
@@ -229,7 +203,7 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                     </button>
                 ) : <div></div>}
                 
-                {step < 5 ? (
+                {step < 4 ? (
                     <button onClick={() => setStep(s => s+1)} className="bg-secondary text-white px-6 py-3 rounded-xl font-bold text-sm shadow-md flex items-center gap-2">
                         Next <ArrowRight size={14}/>
                     </button>

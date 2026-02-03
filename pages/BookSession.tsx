@@ -266,6 +266,16 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     const finalizeBooking = async (paymentId: string) => {
         if (!currentUser || !selectedCategory || !selectedTime || !selectedDate) return;
 
+        // Fetch session history notes from profile to pass to new booking
+        let historyNotes = "First Session";
+        if (userProfile && userProfile.sessionHistory && userProfile.sessionHistory.length > 0) {
+            // Get the last session's activities
+            const lastSession = userProfile.sessionHistory[userProfile.sessionHistory.length - 1];
+            if (lastSession.activitiesDone) {
+                historyNotes = lastSession.activitiesDone;
+            }
+        }
+
         const newBooking: Booking = {
             id: Date.now().toString(),
             userId: currentUser.uid,
@@ -280,7 +290,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
             flatNo: formData.flatNo,
             userName: formData.name,
             userPhone: formData.phone,
-            sessionNotes: 'Standard Booking',
+            sessionNotes: historyNotes,
             paymentId: paymentId,
             createdAt: Date.now()
         };
@@ -319,6 +329,9 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         navigate('/profile'); 
     };
 
+    // Step labels
+    const stepLabels = ['Activity', 'Time', 'Details', 'Pay'];
+
     return (
         <div className="pt-8 md:pt-4 pb-16 px-6 min-h-screen flex flex-col items-center justify-start max-w-4xl mx-auto">
             {/* Steps & Progress UI */}
@@ -331,6 +344,9 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                             }`}>
                                 {idx + 1}
                             </div>
+                            <span className={`text-[10px] font-bold uppercase tracking-wide ${step >= i ? 'text-secondary' : 'text-gray-300'}`}>
+                                {stepLabels[i-1]}
+                            </span>
                         </div>
                     ))}
                     <div className="absolute top-6 left-0 w-full h-3 bg-gray-100 rounded-full -z-10"></div>
@@ -503,7 +519,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                     {step === 4 && (
                         <div className="animate-in slide-in-from-right duration-300">
                              <h2 className="text-2xl font-black text-secondary mb-1">Summary</h2>
-                             <div className="bg-secondary text-white rounded-[24px] p-6 shadow-2xl mt-4">
+                             <div className="bg-secondary text-white rounded-[24px] p-6 shadow-2xl mt-4 border border-white/10">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
                                         <h3 className="text-2xl font-black text-primary">
