@@ -2,7 +2,7 @@
 import { Booking, UserProfile, UserPackage } from '../types';
 
 // UPDATED URL
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwpz6HHadySp6TnIQuBPfqFuc57yAcaKPcyP1RukAr8ugrSKXPWi5F1bpFfygIokWDl/exec'; 
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbw-MX4BtPKFgWsL-uhz0p9Hs2R_fnnL3WFpROua3a-NmEV1lbKvLO7iuexoSNjB9Yg6/exec'; 
 
 export const submitBookingToSheet = async (booking: Booking, user: UserProfile | null) => {
   if (!SHEET_API_URL || !SHEET_API_URL.includes('/exec')) {

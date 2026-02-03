@@ -217,15 +217,13 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
             setIsProcessing(true);
 
             // 1. Text Keyword Check (Fast Pass - Loose)
-            // Allows users to proceed if they type recognized areas even if geocoding/gps fails
             const lowerAddr = formData.address.toLowerCase();
             const allowedKeywords = ['sarjapur', 'hsr', 'bellandur'];
             const hasKeywordMatch = allowedKeywords.some(k => lowerAddr.includes(k));
 
             try {
-                // 2. Geocoding (Try to get coords for DB, even if keyword matched)
+                // 2. Geocoding
                 if (!currentCoords) {
-                    // Only try geocoding if address length is reasonable to avoid API spam on short strings
                     if (formData.address.length > 3) {
                         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}&addressdetails=1&limit=1`);
                         const results = await response.json();
@@ -239,18 +237,16 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                     }
                 }
 
-                // 3. Radius Check (Strict)
+                // 3. Radius Check
                 let insideRadius = false;
                 if (currentCoords) {
                     insideRadius = checkServiceability(currentCoords.lat, currentCoords.lng);
                 }
 
                 // 4. Combined Validation
-                // We allow if it's explicitly inside radius OR if it matches keywords (User request: "unrestrict location to include any above keywords")
                 if (insideRadius || hasKeywordMatch) {
                     validLocation = true;
                 } else {
-                    // Explicit failure
                     validLocation = false;
                 }
 
@@ -262,7 +258,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
             } catch (e) {
                 console.warn("Location verification error", e);
-                // Fallback: If logic failed but keyword exists, allow it.
                 if (hasKeywordMatch) {
                     validLocation = true;
                 } else {
@@ -318,8 +313,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         setLocLoading(true);
         navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
-            
-            // Set Coords immediately
             setUserCoords({ lat: latitude, lng: longitude });
 
             try {
@@ -482,7 +475,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         navigate('/profile'); // Redirect to profile to see package
     };
 
-    // Calculate highlighting for Next button
     const isNextDisabled = () => {
         if (step === 1) {
             if (bookingType === 'SESSION') return !selectedCategory || !formData.address;
@@ -496,10 +488,8 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     return (
         <div className="pt-8 md:pt-4 pb-16 px-6 min-h-screen flex flex-col items-center justify-start max-w-4xl mx-auto">
             
-            {/* Steps Indicator */}
             <div className="w-full mb-8 px-4">
                 <div className="flex items-center justify-between relative z-10">
-                    {/* Render 3 steps for package, 4 for session */}
                     {(bookingType === 'PACKAGE' ? [1, 3, 4] : [1, 2, 3, 4]).map((i, idx) => (
                         <div key={i} className={`flex flex-col items-center gap-2 transition-all duration-300 ${step >= i ? 'scale-110' : 'opacity-80'}`}>
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-base transition-all duration-300 shadow-md ${
@@ -509,7 +499,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                             </div>
                         </div>
                     ))}
-                    {/* Connecting Line */}
                     <div className="absolute top-6 left-0 w-full h-3 bg-gray-100 rounded-full -z-10"></div>
                 </div>
                 <div className="flex justify-between mt-3 text-xs font-black uppercase tracking-widest text-gray-400">
@@ -524,9 +513,8 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                 
                 <div className="flex-1 min-h-[400px]">
                     {step === 1 && (
+                        /* Step 1 Code (Omitted for brevity, unchanged) */
                         <div className="animate-in slide-in-from-right duration-300">
-                            
-                            {/* Booking Type Toggle */}
                             <div className="bg-gray-100 p-1 rounded-xl flex mb-8">
                                 <button 
                                     onClick={() => { setBookingType('SESSION'); setSelectedPackageId(null); }}
@@ -541,12 +529,12 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                     <Sparkles size={14} className="text-primary"/> Packages
                                 </button>
                             </div>
-
+                            
+                            {/* ... Content of Step 1 ... */}
                             {bookingType === 'SESSION' ? (
                                 <>
                                     <h2 className="text-2xl font-black text-secondary mb-1">Choose Workout</h2>
                                     <p className="text-gray-400 text-sm font-medium mb-6">Select your preferred training style</p>
-                                    
                                     <div className="grid grid-cols-2 gap-4 mb-8">
                                         {CATEGORIES.map(cat => (
                                             <button
@@ -572,7 +560,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                                     <span className={`font-black text-base leading-tight block ${selectedCategory === cat.id ? 'text-white' : 'text-secondary'}`}>{cat.name}</span>
                                                     {cat.active && <span className={`text-[10px] font-bold uppercase tracking-wide block mt-1 ${selectedCategory === cat.id ? 'text-white/60' : 'text-gray-400'}`}>60 Mins</span>}
                                                 </div>
-                                                
                                                 {!cat.active && (
                                                     <div className="absolute inset-0 flex items-center justify-center">
                                                          <span className="bg-secondary text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg transform -rotate-6">Coming Soon</span>
@@ -591,7 +578,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                 <>
                                     <h2 className="text-2xl font-black text-secondary mb-1">Select Package</h2>
                                     <p className="text-gray-400 text-sm font-medium mb-6">Commit to fit and save more</p>
-                                    
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                         {PACKAGES.map(pkg => (
                                             <button
@@ -613,7 +599,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                                         <p className={`text-[10px] font-bold uppercase ${selectedPackageId === pkg.id ? 'text-white/50' : 'text-gray-400'}`}>Total Price</p>
                                                     </div>
                                                 </div>
-                                                
                                                 <div className={`p-4 rounded-xl flex items-center gap-3 ${selectedPackageId === pkg.id ? 'bg-white/10' : 'bg-gray-50'}`}>
                                                     <Star className="text-primary" size={20} fill="currentColor" />
                                                     <div>
@@ -621,7 +606,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                                         <p className={`text-xs ${selectedPackageId === pkg.id ? 'text-white/60' : 'text-gray-400'}`}>{pkg.description}</p>
                                                     </div>
                                                 </div>
-
                                                 {selectedPackageId === pkg.id && (
                                                     <div className="absolute top-3 right-3 text-white animate-in zoom-in">
                                                         <CheckCircle size={24} fill="currentColor" className="text-primary" />
@@ -632,7 +616,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                     </div>
                                 </>
                             )}
-
                             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mt-2">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-1"><MapPin size={12}/> Service Location *</h3>
@@ -652,16 +635,15 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                     )}
 
                     {step === 2 && bookingType === 'SESSION' && (
+                        /* Step 2 Code (Time) */
                         <div className="animate-in slide-in-from-right duration-300">
-                            <h2 className="text-2xl font-black text-secondary mb-1">When to train?</h2>
-                            <p className="text-gray-400 text-sm font-medium mb-6">Select a convenient date and time</p>
-                            
-                            {/* Date Selection */}
-                            <div className="flex gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar">
+                             {/* ... Omitted for brevity, logic unchanged ... */}
+                             <h2 className="text-2xl font-black text-secondary mb-1">When to train?</h2>
+                             <p className="text-gray-400 text-sm font-medium mb-6">Select a convenient date and time</p>
+                             <div className="flex gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar">
                                 {next3Days.map((date) => {
                                     const isSelected = selectedDate?.toDateString() === date.toDateString();
                                     const isToday = new Date().toDateString() === date.toDateString();
-                                    
                                     return (
                                         <button
                                             key={date.toString()}
@@ -680,12 +662,8 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                     );
                                 })}
                             </div>
-
-                            {/* Time Selection */}
                             {selectedDate ? (
                                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
-                                    
-                                    {/* Morning Slots */}
                                     {availableSlots.morning.length > 0 && (
                                         <div>
                                             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -708,8 +686,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* Evening Slots */}
                                     {availableSlots.evening.length > 0 && (
                                         <div>
                                             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -732,7 +708,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                             </div>
                                         </div>
                                     )}
-                                    
                                     {availableSlots.morning.length === 0 && availableSlots.evening.length === 0 && (
                                         <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                                             <Clock className="mx-auto text-gray-300 mb-3" size={40} />
@@ -750,6 +725,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                     )}
 
                     {step === 3 && (
+                        /* Step 3 Code (Details) */
                         <div className="animate-in slide-in-from-right duration-300 space-y-6">
                             <h2 className="text-2xl font-black text-secondary mb-1">Contact Details</h2>
                             <p className="text-gray-400 text-sm font-medium">Where should the trainer arrive?</p>
@@ -772,7 +748,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                         </select>
                                     </div>
                                 </div>
-                                
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="group">
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Phone *</label>
@@ -785,7 +760,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                         <input type="email" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="input-field mt-1" placeholder="john@example.com" />
                                     </div>
                                 </div>
-
                                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mt-2">
                                     <div className="grid grid-cols-2 gap-3 mb-3">
                                         <div>
@@ -813,9 +787,8 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                              <div className="relative bg-secondary text-white rounded-[24px] overflow-hidden shadow-2xl shadow-secondary/20">
                                 {/* Top Section (Navy) */}
                                 <div className="p-6 relative">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                                        <Sparkles size={80} />
-                                    </div>
+                                    
+                                    {/* Removed the background Sparkles icon here */}
                                     
                                     <div className="flex justify-between items-start mb-6 relative z-10">
                                         <div>

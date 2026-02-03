@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserCircle, ShieldCheck, Calendar, Lock, Loader2, X, Ruler, Weight, Activity, Mail, Package, CheckCircle } from 'lucide-react';
+import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserCircle, ShieldCheck, Calendar, Lock, Loader2, X, Ruler, Weight, Activity, Mail, Package, CheckCircle, Headphones } from 'lucide-react';
 import { Booking, UserProfile } from '../types';
 import { getBookings, getUserProfile, logoutUser, saveUserProfile } from '../services/db';
 import { auth } from '../services/firebase';
@@ -222,6 +222,29 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
             />
         </div>
 
+        {/* New Contact Card */}
+        <div className="mb-8 bg-blue-50/50 rounded-[24px] p-6 border border-blue-100">
+             <div className="flex items-center gap-3 mb-4">
+                 <div className="w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                     <Headphones size={20} />
+                 </div>
+                 <div>
+                     <h3 className="font-bold text-secondary text-sm">Need Help?</h3>
+                     <p className="text-[10px] text-gray-500">We are here for you 24/7</p>
+                 </div>
+             </div>
+             <div className="space-y-3">
+                 <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                     <Phone size={16} className="text-primary" />
+                     <span className="text-xs font-bold text-gray-600">+91 73537 62555</span>
+                 </div>
+                 <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                     <Mail size={16} className="text-primary" />
+                     <span className="text-xs font-bold text-gray-600">founder@zuryo.co</span>
+                 </div>
+             </div>
+        </div>
+
         <button 
             onClick={onLogout}
             className="w-full p-4 bg-red-50 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
@@ -230,7 +253,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
         </button>
 
         <div className="mt-8 text-center pb-8">
-            <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Version 1.0.3</p>
+            <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Version 1.0.4</p>
         </div>
 
         {/* Modals - Rendered outside the flow to prevent z-index issues */}

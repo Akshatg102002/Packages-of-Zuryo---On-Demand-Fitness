@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Clock, Trash2, CalendarCheck, Loader2, Lock, ArrowRight, Ban, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, Trash2, CalendarCheck, Loader2, Lock, ArrowRight, Ban, CheckCircle, RefreshCw, AlertTriangle, MapPin, User, Navigation } from 'lucide-react';
 import { Booking } from '../types';
 import { getBookings, cancelBooking } from '../services/db';
 import { auth } from '../services/firebase';
@@ -70,8 +70,6 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
       if (activeTab === 'upcoming') return b.status === 'confirmed';
       if (activeTab === 'completed') return b.status === 'completed';
       if (activeTab === 'cancelled') return b.status === 'cancelled';
-      // For now, we don't have a distinct 'rescheduled' status in backend, so it might be empty or we could show cancelled ones that were rebooked if we tracked it.
-      // Keeping it empty or same as cancelled for demo purposes as per request "Add 1 more tab"
       if (activeTab === 'rescheduled') return false; 
       return false;
   });
@@ -164,6 +162,7 @@ const BookingCard: React.FC<{
     onCancel: (id: string) => void,
     onReschedule: (id: string) => void 
 }> = ({ booking, onCancel, onReschedule }) => {
+    const navigate = useNavigate();
     
     // Helper to parse date/time string to Date object
     const getBookingDateTime = (dateStr: string, timeStr: string) => {
@@ -185,69 +184,83 @@ const BookingCard: React.FC<{
 
     const sessionDate = getBookingDateTime(booking.date, booking.time);
     const now = new Date();
-    // Difference in hours
     const diffHours = (sessionDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
-    // Cancellation/Reschedule allowed if > 4 hours remaining
     const canModify = diffHours >= 4 && booking.status === 'confirmed';
 
+    const isConfirmed = booking.status === 'confirmed';
+    const isCancelled = booking.status === 'cancelled';
+    const isCompleted = booking.status === 'completed';
+
     return (
-        <div className={`p-6 rounded-[24px] shadow-soft hover:shadow-xl transition-all border flex flex-col gap-4 relative overflow-hidden group h-full ${
-            booking.status === 'cancelled' ? 'bg-red-50/50 border-red-100' : 'bg-white border-gray-50'
+        <div className={`p-6 rounded-[32px] transition-all border flex flex-col gap-4 relative overflow-hidden group h-full shadow-lg ${
+            isCancelled ? 'bg-red-50/50 border-red-100 opacity-80 grayscale-[0.5]' : 'bg-white border-white/20 hover:-translate-y-1'
         }`}>
-            {booking.status === 'confirmed' && (
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/5 to-transparent -mr-10 -mt-10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-            )}
-            
+            {/* Background Decor */}
+            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 opacity-20 pointer-events-none ${
+                isConfirmed ? 'bg-blue-400' : isCancelled ? 'bg-red-400' : 'bg-green-400'
+            }`}></div>
+
             <div className="flex justify-between items-start relative z-10">
                 <div className="flex gap-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${
-                        booking.status === 'confirmed' ? 'bg-blue-50 text-blue-600' : 
-                        booking.status === 'cancelled' ? 'bg-red-100 text-red-500' :
-                        'bg-gray-100 text-gray-400'
+                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-white/50 backdrop-blur-sm ${
+                        isConfirmed ? 'bg-blue-50 text-blue-600' : 
+                        isCancelled ? 'bg-red-50 text-red-500' :
+                        'bg-green-50 text-green-600'
                     }`}>
-                        {booking.status === 'cancelled' ? <Ban size={24} /> : <Clock size={24} />}
+                        <Calendar size={24} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-secondary text-lg">{booking.category}</h3>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wide mt-1">
-                            {booking.trainerName !== "Matching with Pro..." ? booking.trainerName : "Assigning Trainer..."}
-                        </p>
+                        <h3 className="font-black text-secondary text-lg leading-tight">{booking.category}</h3>
+                        <div className="flex items-center gap-1.5 mt-1">
+                             <User size={12} className="text-gray-400"/>
+                             <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">
+                                {booking.trainerName !== "Matching with Pro..." ? booking.trainerName : "Matching..."}
+                             </p>
+                        </div>
                     </div>
                 </div>
                 
-                <div className={`text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-wide border ${
-                    booking.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-100' : 
-                    booking.status === 'cancelled' ? 'bg-white text-red-600 border-red-200' : 
-                    'bg-gray-50 text-gray-600 border-gray-100'
+                <div className={`text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-wide border shadow-sm ${
+                    isConfirmed ? 'bg-green-100 text-green-800 border-green-200' : 
+                    isCancelled ? 'bg-red-100 text-red-700 border-red-200' : 
+                    'bg-gray-100 text-gray-600 border-gray-200'
                 }`}>
                     {booking.status}
                 </div>
             </div>
             
-            <div className={`flex flex-col gap-3 rounded-2xl p-4 border mt-2 ${
-                booking.status === 'cancelled' ? 'bg-white/50 border-red-50' : 'bg-gray-50/50 border-gray-100'
-            }`}>
-                <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-400 font-medium">Date & Time</span>
-                    <span className="font-bold text-secondary">{new Date(booking.date).toLocaleDateString()} <span className="mx-1">•</span> {booking.time}</span>
+            {/* Info Grid */}
+            <div className="bg-gray-50/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-100 flex flex-col gap-3 mt-2">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400 shadow-sm shrink-0">
+                        <Clock size={16} />
+                    </div>
+                    <div>
+                         <p className="text-[10px] font-bold text-gray-400 uppercase">When</p>
+                         <p className="text-sm font-bold text-secondary">{new Date(booking.date).toLocaleDateString()} at {booking.time}</p>
+                    </div>
                 </div>
-                <div className="flex justify-between items-start text-sm">
-                    <span className="text-gray-400 font-medium shrink-0">Location</span>
-                    <span className="font-bold text-secondary text-right line-clamp-1 pl-4">{booking.location || 'Home Location'}</span>
+                <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400 shadow-sm shrink-0">
+                        <MapPin size={16} />
+                    </div>
+                    <div>
+                         <p className="text-[10px] font-bold text-gray-400 uppercase">Where</p>
+                         <p className="text-sm font-medium text-gray-600 line-clamp-2 leading-tight">{booking.location || 'Home Location'}</p>
+                    </div>
                 </div>
             </div>
             
             <div className="mt-auto pt-2">
-                {booking.status === 'confirmed' && (
+                {isConfirmed && (
                     <div className="flex gap-3">
                         <button 
                             onClick={() => canModify ? onReschedule(booking.id) : null}
                             disabled={!canModify}
-                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 rounded-xl transition-colors border ${
+                            className={`flex-1 py-3.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl transition-all border shadow-sm ${
                                 canModify 
-                                ? 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100' 
-                                : 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed'
+                                ? 'bg-white text-secondary border-gray-200 hover:bg-gray-50 hover:border-gray-300' 
+                                : 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed opacity-70'
                             }`}
                         >
                             <RefreshCw size={14} /> Reschedule
@@ -255,10 +268,10 @@ const BookingCard: React.FC<{
                         <button 
                             onClick={() => canModify ? onCancel(booking.id) : null}
                             disabled={!canModify}
-                            className={`flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 rounded-xl transition-colors border ${
+                            className={`flex-1 py-3.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl transition-all border shadow-sm ${
                                 canModify
-                                ? 'bg-white text-red-500 border-red-100 hover:bg-red-50 shadow-sm'
-                                : 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed'
+                                ? 'bg-white text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200'
+                                : 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed opacity-70'
                             }`}
                         >
                             <Trash2 size={14} /> Cancel
@@ -266,11 +279,17 @@ const BookingCard: React.FC<{
                     </div>
                 )}
                 
-                {booking.status === 'confirmed' && !canModify && (
-                    <div className="flex items-center gap-2 mt-3 justify-center text-[10px] font-medium text-orange-500 bg-orange-50 p-2 rounded-lg">
-                        <AlertTriangle size={12} />
-                        <span>Changes allowed only up to 4 hours before session.</span>
+                {isConfirmed && !canModify && (
+                    <div className="flex items-center gap-2 mt-2 justify-center text-[10px] font-bold text-orange-600 bg-orange-50 p-2.5 rounded-xl border border-orange-100">
+                        <AlertTriangle size={14} />
+                        <span>Changes allowed up to 4 hrs before session</span>
                     </div>
+                )}
+
+                {isCompleted && (
+                    <button onClick={() => navigate('/book')} className="w-full py-3.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl bg-primary text-secondary shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+                        <RefreshCw size={14} /> Book Again
+                    </button>
                 )}
             </div>
         </div>

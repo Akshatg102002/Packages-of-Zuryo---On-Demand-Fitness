@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Booking, UserProfile } from './types';
@@ -13,8 +14,8 @@ import { ResetPassword } from './pages/ResetPassword';
 import { Onboarding } from './components/Onboarding';
 import { Auth } from './components/Auth';
 import { Footer } from './components/Footer';
-import { getUserProfile, logoutUser } from './services/db';
-import { auth } from './services/firebase';
+import { logoutUser } from './services/db';
+import { auth, db } from './services/firebase'; // Added db import
 import firebase from 'firebase/compat/app';
 import { X, Loader2 } from 'lucide-react';
 import { ToastProvider } from './components/ToastContext';
@@ -110,21 +111,34 @@ export const App: React.FC = () => {
   // --- Auth & Init ---
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500);
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    
+    // Store unsubscribe function for profile listener
+    let unsubscribeProfile: () => void;
+
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
         setCurrentUser(user);
+        
         if (user) {
-            const profile = await getUserProfile(user.uid);
-            if (profile) {
-                setUserProfile(profile);
-            }
+            // Real-time listener: Ensure profile data (address, package) is always fresh
+            unsubscribeProfile = db.collection('users').doc(user.uid)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        setUserProfile(doc.data() as UserProfile);
+                    }
+                }, (error) => {
+                    console.error("Profile sync error", error);
+                });
         } else {
             setUserProfile(null);
+            if(unsubscribeProfile) unsubscribeProfile();
         }
         setAuthChecking(false);
     });
+
     return () => {
         clearTimeout(timer);
-        unsubscribe();
+        unsubscribeAuth();
+        if(unsubscribeProfile) unsubscribeProfile();
     };
   }, []);
 
