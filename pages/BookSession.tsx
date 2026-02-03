@@ -28,7 +28,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [locLoading, setLocLoading] = useState(false);
     
     // Form Data
     const [formData, setFormData] = useState({
@@ -192,29 +191,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         return false;
     };
 
-    const handleCurrentLocation = () => {
-        if (!navigator.geolocation) return;
-        setLocLoading(true);
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const { latitude, longitude } = position.coords;
-            try {
-                // Simplified fetch to just get Area/Locality
-                const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
-                const data = await response.json();
-                const locality = data.locality || data.city || "Bengaluru";
-                setFormData(prev => ({ ...prev, address: `${locality}, Bengaluru` }));
-                showToast("Location detected: " + locality, "success");
-            } catch (error) {
-                setFormData(prev => ({ ...prev, address: "Bengaluru" }));
-            } finally {
-                setLocLoading(false);
-            }
-        }, () => {
-            setFormData(prev => ({ ...prev, address: "Bengaluru" }));
-            setLocLoading(false);
-        });
-    };
-
     const processPayment = async () => {
         if (!currentUser) return;
         setIsProcessing(true);
@@ -345,7 +321,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
     return (
         <div className="pt-8 md:pt-4 pb-16 px-6 min-h-screen flex flex-col items-center justify-start max-w-4xl mx-auto">
-            {/* Steps & Progress UI (Same as before) ... */}
+            {/* Steps & Progress UI */}
             <div className="w-full mb-8 px-4">
                 <div className="flex items-center justify-between relative z-10">
                     {(bookingType === 'PACKAGE' ? [1, 3, 4] : [1, 2, 3, 4]).map((i, idx) => (
@@ -428,18 +404,15 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mt-2">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-1"><MapPin size={12}/> Service Location *</h3>
-                                    <button onClick={handleCurrentLocation} className="text-[10px] font-bold text-primary flex items-center gap-1 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-100">
-                                        {locLoading ? <Loader2 size={10} className="animate-spin" /> : <LocateFixed size={10} />} Detect
-                                    </button>
                                 </div>
                                 <textarea 
-                                    placeholder="Area (e.g. HSR Layout)" 
+                                    placeholder="Enter your Area (e.g. HSR Layout)" 
                                     value={formData.address} 
                                     onChange={e=>setFormData(prev => ({ ...prev, address: e.target.value }))} 
                                     className="input-field bg-white min-h-[60px] resize-none" 
                                 />
                                 <div className="text-[10px] text-gray-500 mt-3 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                                    Currently Serving: <span className="font-black text-secondary text-xs">SARJAPUR, BELLANDUR, HSR LAYOUT</span>
+                                    SERVING: <span className="font-black text-secondary text-xs">SARJAPUR, BELLANDUR, HSR LAYOUT</span>
                                 </div>
                             </div>
                         </div>

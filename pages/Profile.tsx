@@ -100,7 +100,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
                     <div className="w-10 h-10 bg-white/10 text-primary rounded-full flex items-center justify-center mb-2 backdrop-blur-sm">
                         <Package size={20} />
                     </div>
-                    {/* Hiding progress bar logic as per request */}
+                    {/* No progress tracking shown */}
                     <p className="text-2xl font-black">Active</p> 
                     <p className="text-[10px] font-bold opacity-60 uppercase tracking-wide">Package Status</p>
                  </div>
@@ -123,7 +123,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
             </div>
         </div>
 
-        {/* Active Package Card (If exists) - Modified to hide progress */}
+        {/* Active Package Card (If exists) - Simplified view */}
         {userProfile?.activePackage?.isActive && (
             <div className="mb-8 animate-in slide-in-from-bottom-4 duration-300">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Current Membership</h3>
@@ -194,7 +194,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
         </button>
 
         <div className="mt-8 text-center pb-8">
-            <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Version 1.0.5</p>
+            <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Version 1.0.6</p>
         </div>
 
         {/* Modals */}

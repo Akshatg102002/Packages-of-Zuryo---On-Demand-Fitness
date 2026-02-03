@@ -1,12 +1,61 @@
 
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown } from 'lucide-react';
+import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock } from 'lucide-react';
 import { getAllBookings, getAllUsers, updateBooking, getAllTrainers } from '../services/db';
 import { Booking, UserProfile } from '../types';
 import { useToast } from '../components/ToastContext';
 import { MOCK_TRAINERS } from '../constants';
 
 export const AdminDashboard: React.FC = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault();
+        if(email === 'admin@zuryo.co' && password === 'admin123') {
+            setIsAuthenticated(true);
+        } else {
+            setError('Invalid Admin Credentials');
+        }
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
+                    <div className="flex justify-center mb-6">
+                        <div className="w-16 h-16 bg-secondary rounded-xl flex items-center justify-center text-primary font-black text-2xl">Z</div>
+                    </div>
+                    <h2 className="text-xl font-black text-center text-secondary mb-6">Admin Console</h2>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <input 
+                            type="email" 
+                            placeholder="Admin Email" 
+                            className="w-full p-3 border rounded-lg"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                        />
+                        <input 
+                            type="password" 
+                            placeholder="Password" 
+                            className="w-full p-3 border rounded-lg"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                        />
+                        {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+                        <button type="submit" className="w-full bg-secondary text-white py-3 rounded-lg font-bold">Login</button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    return <AuthenticatedDashboard />;
+};
+
+const AuthenticatedDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS'>('BOOKINGS');
     
     return (

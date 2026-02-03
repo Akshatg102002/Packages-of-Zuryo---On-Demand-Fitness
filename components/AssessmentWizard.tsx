@@ -11,7 +11,6 @@ interface Props {
 }
 
 export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSave, mode = 'TRAINER_EDIT' }) => {
-    // Ensure deep merge/defaults to avoid undefined errors if legacy data exists
     const [data, setData] = useState<AssessmentData>(initialData);
     const [step, setStep] = useState(1); 
 
@@ -30,11 +29,11 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
     };
 
     const steps = [
-        { id: 1, title: 'Basic Profile', section: 'A' },
-        { id: 2, title: 'Health & Lifestyle', section: 'B' },
-        { id: 3, title: 'Body Metrics', section: 'C' },
-        { id: 4, title: 'Trainer Eval', section: 'D-G' },
-        { id: 5, title: 'Goals & Outcomes', section: 'H-K' }
+        { id: 1, title: 'Profile', section: 'A' },
+        { id: 2, title: 'Health', section: 'B' },
+        { id: 3, title: 'Body', section: 'C' },
+        { id: 4, title: 'Evaluation', section: 'D-G' },
+        { id: 5, title: 'Goals', section: 'H-K' }
     ];
 
     return (
@@ -51,8 +50,8 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
 
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-xl font-black text-secondary">{mode === 'USER_VIEW' ? 'My Assessment' : 'Client Assessment'}</h2>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wide">{steps[step-1].title}</p>
+                    <h2 className="text-xl font-black text-secondary">{mode === 'USER_VIEW' ? 'My Assessment' : 'Customer Assessment'}</h2>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wide">{steps[step-1].section}: {steps[step-1].title}</p>
                 </div>
                 <div className="flex gap-1">
                     {steps.map(s => (
@@ -70,11 +69,20 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                             <InputGroup label="Full Name" value={data.basic?.fullName} onChange={v => updateDeep(['basic', 'fullName'], v)} disabled={isLocked} />
                             <InputGroup label="Age" value={data.basic?.age} onChange={v => updateDeep(['basic', 'age'], v)} disabled={isLocked} type="number" />
                         </div>
-                        <InputGroup label="Gender" value={data.basic?.gender} onChange={v => updateDeep(['basic', 'gender'], v)} disabled={isLocked} />
-                        <InputGroup label="Contact Number" value={data.basic?.contactNumber} onChange={v => updateDeep(['basic', 'contactNumber'], v)} disabled={isLocked} />
-                        <InputGroup label="Address (Apt/Flat/Tower)" value={data.basic?.address} onChange={v => updateDeep(['basic', 'address'], v)} disabled={isLocked} />
                         <div className="grid grid-cols-2 gap-4">
-                            <InputGroup label="First Session Date" value={data.basic?.dateOfFirstSession} onChange={v => updateDeep(['basic', 'dateOfFirstSession'], v)} disabled={isLocked} type="date" />
+                            <InputGroup label="Gender" value={data.basic?.gender} onChange={v => updateDeep(['basic', 'gender'], v)} disabled={isLocked} />
+                            <InputGroup label="Contact" value={data.basic?.contactNumber} onChange={v => updateDeep(['basic', 'contactNumber'], v)} disabled={isLocked} />
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-xl">
+                            <label className="label">Address Details</label>
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <input placeholder="Apartment Name" className="input" value={data.basic?.address?.apartmentName || ''} onChange={e => updateDeep(['basic', 'address', 'apartmentName'], e.target.value)} disabled={isLocked} />
+                                <input placeholder="Tower/Block" className="input" value={data.basic?.address?.towerBlock || ''} onChange={e => updateDeep(['basic', 'address', 'towerBlock'], e.target.value)} disabled={isLocked} />
+                            </div>
+                            <input placeholder="Flat No" className="input" value={data.basic?.address?.flatNo || ''} onChange={e => updateDeep(['basic', 'address', 'flatNo'], e.target.value)} disabled={isLocked} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputGroup label="First Session" value={data.basic?.dateOfFirstSession} onChange={v => updateDeep(['basic', 'dateOfFirstSession'], v)} disabled={isLocked} type="date" />
                             <InputGroup label="Trainer Name" value={data.basic?.trainerName} onChange={v => updateDeep(['basic', 'trainerName'], v)} disabled={isLocked} />
                         </div>
                     </div>
@@ -85,7 +93,7 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                     <div className="animate-in slide-in-from-right duration-300 space-y-4">
                         <MultiSelect 
                             label="Medical Conditions" 
-                            options={["None", "BP", "Diabetes", "Thyroid", "Cardiac", "Asthma", "PCOS", "Cholesterol", "Arthritis", "Other"]}
+                            options={["None", "BP", "Diabetes", "Thyroid", "Cardiac", "Asthma", "PCOS/Hormonal", "Cholesterol", "Arthritis", "Other"]}
                             values={data.health?.medicalConditions || []}
                             onChange={v => updateDeep(['health', 'medicalConditions'], v)}
                             disabled={isLocked}
@@ -111,10 +119,17 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                             onChange={v => updateDeep(['health', 'lifestyle', 'dailyMovement'], v)}
                             disabled={isLocked}
                         />
+                        <SelectGroup 
+                            label="Sleep Quality"
+                            options={["Poor", "Average", "Good"]}
+                            value={data.health?.lifestyle?.sleepQuality}
+                            onChange={v => updateDeep(['health', 'lifestyle', 'sleepQuality'], v)}
+                            disabled={isLocked}
+                        />
                     </div>
                 )}
 
-                {/* SECTION C: BODY */}
+                {/* SECTION C: BODY MEASUREMENTS */}
                 {step === 3 && (
                     <div className="animate-in slide-in-from-right duration-300 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -126,16 +141,24 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                             <InputGroup label="Hip (in)" value={data.body?.hip} onChange={v => updateDeep(['body', 'hip'], v)} disabled={isLocked} type="number" />
                             <InputGroup label="Chest (in)" value={data.body?.chest} onChange={v => updateDeep(['body', 'chest'], v)} disabled={isLocked} type="number" />
                         </div>
+                        <div className="bg-gray-50 p-4 rounded-xl">
+                            <label className="label">Biceps (in)</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputGroup label="Left" value={data.body?.biceps?.left} onChange={v => updateDeep(['body', 'biceps', 'left'], v)} disabled={isLocked} type="number" />
+                                <InputGroup label="Right" value={data.body?.biceps?.right} onChange={v => updateDeep(['body', 'biceps', 'right'], v)} disabled={isLocked} type="number" />
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                {/* SECTION D-G: EVALUATION */}
+                {/* SECTION D-G: TRAINER EVALUATION */}
                 {step === 4 && (
-                    <div className="animate-in slide-in-from-right duration-300 space-y-4 h-80 overflow-y-auto pr-2">
+                    <div className="animate-in slide-in-from-right duration-300 space-y-4 h-[400px] overflow-y-auto pr-2">
                         <SelectGroup label="Posture" options={["Neutral", "Forward Head", "Rounded Shoulders", "APT", "Other"]} value={data.evaluation?.posture} onChange={v => updateDeep(['evaluation', 'posture'], v)} disabled={isLocked} />
+                        <SelectGroup label="Balance" options={["Stable", "Slight Imbalance", "Poor"]} value={data.evaluation?.balance} onChange={v => updateDeep(['evaluation', 'balance'], v)} disabled={isLocked} />
                         
                         <div className="p-3 border border-gray-100 rounded-xl">
-                            <label className="label text-primary">Mobility Check</label>
+                            <label className="label text-primary">Mobility</label>
                             <div className="grid grid-cols-2 gap-2">
                                 <SelectGroup label="Hip" options={["Good", "Avg", "Poor"]} value={data.evaluation?.mobility?.hip} onChange={v => updateDeep(['evaluation', 'mobility', 'hip'], v)} disabled={isLocked} compact />
                                 <SelectGroup label="Ankle" options={["Good", "Avg", "Poor"]} value={data.evaluation?.mobility?.ankle} onChange={v => updateDeep(['evaluation', 'mobility', 'ankle'], v)} disabled={isLocked} compact />
@@ -144,12 +167,22 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                             </div>
                         </div>
 
+                        <div className="p-3 border border-gray-100 rounded-xl">
+                            <label className="label text-primary">Flexibility</label>
+                            <div className="space-y-2">
+                                <SelectGroup label="Hamstrings" options={["Tight", "Moderate", "Flexible"]} value={data.evaluation?.flexibility?.hamstrings} onChange={v => updateDeep(['evaluation', 'flexibility', 'hamstrings'], v)} disabled={isLocked} compact />
+                                <SelectGroup label="Hip Flexors" options={["Tight", "Moderate", "Flexible"]} value={data.evaluation?.flexibility?.hipFlexors} onChange={v => updateDeep(['evaluation', 'flexibility', 'hipFlexors'], v)} disabled={isLocked} compact />
+                                <SelectGroup label="Chest" options={["Tight", "Moderate", "Flexible"]} value={data.evaluation?.flexibility?.chest} onChange={v => updateDeep(['evaluation', 'flexibility', 'chest'], v)} disabled={isLocked} compact />
+                            </div>
+                        </div>
+
                         <SelectGroup label="Squat Pattern" options={["Stable", "Knee collapse", "Limited depth", "Pain"]} value={data.evaluation?.movementStrength?.squatPattern} onChange={v => updateDeep(['evaluation', 'movementStrength', 'squatPattern'], v)} disabled={isLocked} />
+                        <SelectGroup label="Push Movement" options={["Stable", "Weak", "Shoulder discomfort"]} value={data.evaluation?.movementStrength?.pushMovement} onChange={v => updateDeep(['evaluation', 'movementStrength', 'pushMovement'], v)} disabled={isLocked} />
                         <SelectGroup label="Core Engagement" options={["Good", "Average", "Weak"]} value={data.evaluation?.movementStrength?.coreEngagement} onChange={v => updateDeep(['evaluation', 'movementStrength', 'coreEngagement'], v)} disabled={isLocked} />
                     </div>
                 )}
 
-                {/* SECTION H-K: GOALS */}
+                {/* SECTION H-K: GOALS & OUTCOMES */}
                 {step === 5 && (
                     <div className="animate-in slide-in-from-right duration-300 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -158,21 +191,31 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                         </div>
                         <SelectGroup label="Primary Goal" options={["Weight Loss", "Strength", "Mobility", "General Fitness", "Medical"]} value={data.goals?.primaryGoal} onChange={v => updateDeep(['goals', 'primaryGoal'], v)} disabled={isLocked} />
                         
-                        <div>
-                            <label className="label text-red-500">Exercises to Avoid</label>
-                            <textarea className="input h-20" value={data.goals?.trainerNotes?.exercisesToAvoid || ''} onChange={e => updateDeep(['goals', 'trainerNotes', 'exercisesToAvoid'], e.target.value)} disabled={isLocked} />
+                        <MultiSelect 
+                            label="Equipment Available"
+                            options={["None", "Dumbbells", "Bands", "Other"]}
+                            values={data.goals?.equipmentAvailable || []}
+                            onChange={v => updateDeep(['goals', 'equipmentAvailable'], v)}
+                            disabled={isLocked}
+                        />
+
+                        <div className="bg-red-50 p-4 rounded-xl">
+                            <label className="label text-red-800">Trainer Critical Notes</label>
+                            <input placeholder="Exercises to Avoid" className="input mb-2" value={data.goals?.trainerNotes?.exercisesToAvoid || ''} onChange={e => updateDeep(['goals', 'trainerNotes', 'exercisesToAvoid'], e.target.value)} disabled={isLocked} />
+                            <SelectGroup label="Coaching Style" options={["Calm", "Motivational", "Technical"]} value={data.goals?.trainerNotes?.coachingStyle} onChange={v => updateDeep(['goals', 'trainerNotes', 'coachingStyle'], v)} disabled={isLocked} compact/>
                         </div>
 
                         {mode === 'TRAINER_EDIT' && (
-                            <div>
-                                <label className="label text-green-600">Next Session Focus</label>
-                                <input className="input" value={data.goals?.sessionOutcome?.nextSessionFocus || ''} onChange={e => updateDeep(['goals', 'sessionOutcome', 'nextSessionFocus'], e.target.value)} disabled={isLocked} />
+                            <div className="bg-green-50 p-4 rounded-xl">
+                                <label className="label text-green-800">Session Outcome</label>
+                                <SelectGroup label="Customer Comfort" options={["Very Comfortable", "Comfortable", "Uncomfortable"]} value={data.goals?.sessionOutcome?.customerComfort} onChange={v => updateDeep(['goals', 'sessionOutcome', 'customerComfort'], v)} disabled={isLocked} compact />
+                                <input placeholder="Next Session Focus" className="input mt-2" value={data.goals?.sessionOutcome?.nextSessionFocus || ''} onChange={e => updateDeep(['goals', 'sessionOutcome', 'nextSessionFocus'], e.target.value)} disabled={isLocked} />
                             </div>
                         )}
                          {mode === 'USER_VIEW' && (
                             <div className="bg-green-50 p-4 rounded-xl">
-                                <label className="label text-green-800">For Next Session</label>
-                                <p className="font-bold text-secondary">{data.goals?.sessionOutcome?.nextSessionFocus || 'No specific focus set.'}</p>
+                                <label className="label text-green-800">Next Session Focus</label>
+                                <p className="font-bold text-secondary text-lg">{data.goals?.sessionOutcome?.nextSessionFocus || 'Not set yet.'}</p>
                             </div>
                         )}
                     </div>
@@ -193,7 +236,7 @@ export const AssessmentWizard: React.FC<Props> = ({ initialData, isLocked, onSav
                 ) : (
                     mode === 'TRAINER_EDIT' && !isLocked && onSave && (
                         <button onClick={() => onSave(data)} className="bg-green-500 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-md flex items-center gap-2">
-                            <Save size={16} /> Save Form
+                            <Save size={16} /> Save Assessment
                         </button>
                     )
                 )}

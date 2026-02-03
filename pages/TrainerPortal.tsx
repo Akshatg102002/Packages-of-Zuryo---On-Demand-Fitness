@@ -270,7 +270,19 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
     
     // New Default Structure
     const defaultAssessment: AssessmentData = {
-        basic: { fullName: client.name, age: client.age || '', gender: client.gender || '', address: client.address || '', contactNumber: client.phoneNumber || '', dateOfFirstSession: new Date().toISOString().split('T')[0], trainerName: trainerName },
+        basic: { 
+            fullName: client.name, 
+            age: client.age || '', 
+            gender: client.gender || '', 
+            address: {
+                apartmentName: client.apartmentName || '',
+                towerBlock: client.address || '', 
+                flatNo: client.flatNo || ''
+            }, 
+            contactNumber: client.phoneNumber || '', 
+            dateOfFirstSession: new Date().toISOString().split('T')[0], 
+            trainerName: trainerName 
+        },
         health: { medicalConditions: [], injuryHistory: [], currentPain: { location: '', painScale: '' }, lifestyle: { sedentaryJob: false, dailyMovement: 'Moderate', sleepQuality: 'Average' }, safetyClearance: { selfDeclaredFit: true, doctorRestrictions: '' } },
         body: { height: client.height || '', weight: client.weight || '', waist: '', hip: '', chest: '', biceps: { left: '', right: '' } },
         evaluation: { posture: 'Neutral', balance: 'Stable', mobility: { hip: 'Avg', ankle: 'Avg', shoulder: 'Avg', spine: 'Avg' }, flexibility: { hamstrings: 'Moderate', hipFlexors: 'Moderate', chest: 'Moderate' }, movementStrength: { squatPattern: 'Stable', lungeStep: 'Stable', pushMovement: 'Stable', coreEngagement: 'Average' }, stamina: { overall: 'Moderate', breathControl: 'Comfortable' } },

@@ -27,12 +27,16 @@ export interface SessionLog {
 
 // Updated Assessment Structure per JSON requirement
 export interface AssessmentData {
-  // A. Basic Profile (Usually auto-filled, but editable by trainer)
+  // A. Basic Profile
   basic: {
     fullName: string;
     age: string;
     gender: string;
-    address: string; // Combined apartment/tower/flat
+    address: {
+        apartmentName: string;
+        towerBlock: string;
+        flatNo: string;
+    };
     contactNumber: string;
     dateOfFirstSession: string;
     trainerName: string;
@@ -40,16 +44,16 @@ export interface AssessmentData {
 
   // B. Health, Safety & Lifestyle
   health: {
-    medicalConditions: string[]; // ["None", "BP", "Diabetes", etc]
-    injuryHistory: string[]; // ["Knee", "Lower Back", etc]
+    medicalConditions: string[]; 
+    injuryHistory: string[]; 
     currentPain: {
       location: string;
       painScale: string; // "1" to "10"
     };
     lifestyle: {
       sedentaryJob: boolean;
-      dailyMovement: 'Low' | 'Moderate' | 'High';
-      sleepQuality: 'Poor' | 'Average' | 'Good';
+      dailyMovement: string; // Low, Moderate, High
+      sleepQuality: string; // Poor, Average, Good
     };
     safetyClearance: {
       selfDeclaredFit: boolean;
@@ -69,8 +73,8 @@ export interface AssessmentData {
 
   // D-G. Trainer Evaluation
   evaluation: {
-    posture: string; // "Neutral", "Forward Head", etc.
-    balance: string; // "Stable", "Poor"
+    posture: string; 
+    balance: string; 
     mobility: {
       hip: string;
       ankle: string;
@@ -96,8 +100,8 @@ export interface AssessmentData {
 
   // H-K. Goals & Outcomes
   goals: {
-    fitnessCategory: string; // Beginner, Int, Adv
-    riskLevel: string; // Low, Med, High
+    fitnessCategory: string; 
+    riskLevel: string; 
     primaryGoal: string;
     equipmentAvailable: string[];
     trainerNotes: {
