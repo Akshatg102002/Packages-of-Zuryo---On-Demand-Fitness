@@ -17,105 +17,99 @@ export interface Trainer {
 export interface SessionLog {
   date: string; // ISO String
   trainerName: string;
-  
-  // K. Session Outcome
   completed: 'Yes' | 'No';
   comfortLevel: 'Very Comfortable' | 'Comfortable' | 'Uncomfortable';
   verbalFeedback?: string;
   nextRecommendation?: string;
   focusForNext?: string;
-  
-  // What was done
   activitiesDone: string;
 }
 
+// Updated Assessment Structure per JSON requirement
 export interface AssessmentData {
+  // A. Basic Profile (Usually auto-filled, but editable by trainer)
+  basic: {
+    fullName: string;
+    age: string;
+    gender: string;
+    address: string; // Combined apartment/tower/flat
+    contactNumber: string;
+    dateOfFirstSession: string;
+    trainerName: string;
+  };
+
   // B. Health, Safety & Lifestyle
-  medicalConditions: string[]; // BP, Diabetes, etc.
-  injuryHistory: string[]; // Knee, Lower Back, etc.
-  currentPain: {
-    exists: boolean;
-    location?: string;
-    scale?: number; // 1-10
-  };
-  lifestyle: {
-    sedentary: boolean;
-    movement: 'Low' | 'Moderate' | 'High';
-    sleep: 'Poor' | 'Average' | 'Good';
-  };
-  safetyClearance: {
-    fitToExercise: boolean;
-    doctorRestrictions: boolean;
-    restrictionDetails?: string;
-  };
-
-  // C. Measurements
-  measurements: {
-    height?: string;
-    weight?: string;
-    waist?: string;
-    hip?: string;
-    chest?: string;
-    bicepsLeft?: string;
-    bicepsRight?: string;
+  health: {
+    medicalConditions: string[]; // ["None", "BP", "Diabetes", etc]
+    injuryHistory: string[]; // ["Knee", "Lower Back", etc]
+    currentPain: {
+      location: string;
+      painScale: string; // "1" to "10"
+    };
+    lifestyle: {
+      sedentaryJob: boolean;
+      dailyMovement: 'Low' | 'Moderate' | 'High';
+      sleepQuality: 'Poor' | 'Average' | 'Good';
+    };
+    safetyClearance: {
+      selfDeclaredFit: boolean;
+      doctorRestrictions: string;
+    };
   };
 
-  // D. Posture
-  posture: {
-    alignment: string; // Neutral, Forward Head, etc.
-    balance: 'Stable' | 'Slight Imbalance' | 'Poor';
-    notes?: string;
+  // C. Body Measurements
+  body: {
+    height: string;
+    weight: string;
+    waist: string;
+    hip: string;
+    chest: string;
+    biceps: { left: string; right: string };
   };
 
-  // E. Mobility & Flexibility
-  mobility: {
-    hip: 'Good' | 'Average' | 'Poor';
-    ankle: 'Good' | 'Average' | 'Poor';
-    shoulder: 'Good' | 'Average' | 'Poor';
-    spine: 'Good' | 'Average' | 'Poor';
-  };
-  flexibility: {
-    hamstrings: 'Tight' | 'Moderate' | 'Flexible';
-    hipFlexors: 'Tight' | 'Moderate' | 'Flexible';
-    chest: 'Tight' | 'Moderate' | 'Flexible';
-  };
-  
-  // F. Movement & Strength
-  movement: {
-    squat: string;
-    lunge: string;
-    push: string;
-    core: string;
-  };
-
-  // G. Stamina
-  stamina: {
-    overall: 'Low' | 'Moderate' | 'Good';
-    breathControl: 'Comfortable' | 'Breathless quickly';
-  };
-
-  // H. Overall Level
-  fitnessLevel: {
-    category: 'Beginner' | 'Intermediate' | 'Advanced';
-    riskLevel: 'Low' | 'Medium' | 'High';
+  // D-G. Trainer Evaluation
+  evaluation: {
+    posture: string; // "Neutral", "Forward Head", etc.
+    balance: string; // "Stable", "Poor"
+    mobility: {
+      hip: string;
+      ankle: string;
+      shoulder: string;
+      spine: string;
+    };
+    flexibility: {
+      hamstrings: string;
+      hipFlexors: string;
+      chest: string;
+    };
+    movementStrength: {
+      squatPattern: string;
+      lungeStep: string;
+      pushMovement: string;
+      coreEngagement: string;
+    };
+    stamina: {
+      overall: string;
+      breathControl: string;
+    };
   };
 
-  // I. Goals
+  // H-K. Goals & Outcomes
   goals: {
-    primary: string; // Weight Loss, Strength, etc.
-    secondary?: string;
-    intensityPref: 'Low' | 'Moderate' | 'High';
-    timePref: 'Morning' | 'Evening';
-    equipment: string;
-    dislikes?: string;
-  };
-
-  // J. Trainer Notes (Critical)
-  trainerNotes: {
-    avoidExercises?: string;
-    goodExercises?: string;
-    coachingStyle: 'Calm' | 'Motivational' | 'Technical';
-    behavioralNotes?: string;
+    fitnessCategory: string; // Beginner, Int, Adv
+    riskLevel: string; // Low, Med, High
+    primaryGoal: string;
+    equipmentAvailable: string[];
+    trainerNotes: {
+      exercisesToAvoid: string;
+      coachingStyle: string;
+      rotationNotes: string;
+    };
+    sessionOutcome: {
+      completed: boolean;
+      customerComfort: string;
+      nextSessionFocus: string;
+    };
   };
 }
 

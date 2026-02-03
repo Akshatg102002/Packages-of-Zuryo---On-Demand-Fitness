@@ -1,11 +1,13 @@
+
 import React, { useEffect, useState } from 'react';
-import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserCircle, ShieldCheck, Calendar, Lock, Loader2, X, Ruler, Weight, Activity, Mail, Package, CheckCircle, Headphones } from 'lucide-react';
+import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserCircle, ShieldCheck, Calendar, Lock, Loader2, X, Ruler, Weight, Activity, Mail, Package, CheckCircle, Headphones, ClipboardList } from 'lucide-react';
 import { Booking, UserProfile } from '../types';
 import { getBookings, getUserProfile, logoutUser, saveUserProfile } from '../services/db';
 import { auth } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
 import { submitProfileToSheet } from '../services/sheetService';
 import { useToast } from '../components/ToastContext';
+import { AssessmentWizard } from '../components/AssessmentWizard';
 
 interface ProfileProps {
     onLogout: () => void;
@@ -18,7 +20,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeModal, setActiveModal] = useState<'PERSONAL' | 'ADDRESS' | null>(null);
+  const [activeModal, setActiveModal] = useState<'PERSONAL' | 'ADDRESS' | 'ASSESSMENT' | null>(null);
 
   const DEFAULT_AVATAR = "https://ui-avatars.com/api/?background=142B5D&color=fff&name=";
 
@@ -37,8 +39,15 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
   }, []);
 
   const handleUpdateProfile = async (updatedData: Partial<UserProfile>) => {
-      // Profile details are locked for editing by user
-      return; 
+      if(!userProfile) return;
+      try {
+          const newProfile = { ...userProfile, ...updatedData };
+          await saveUserProfile(newProfile);
+          setUserProfile(newProfile);
+          showToast("Profile Updated", "success");
+      } catch(e) {
+          showToast("Update Failed", "error");
+      }
   };
 
   const MenuItem = ({ icon, label, onClick, badge, subLabel }: any) => (
@@ -62,25 +71,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
       </button>
   );
 
-  if (!auth.currentUser) {
-      return (
-        <div className="pt-32 px-6 flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6 animate-in fade-in duration-500">
-            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 shadow-inner">
-                <Lock size={40} />
-            </div>
-            <div>
-                <h2 className="text-2xl font-extrabold text-secondary mb-2">Profile Locked</h2>
-                <p className="text-gray-500 max-w-[240px] mx-auto text-sm leading-relaxed">
-                    Please log in to manage your profile and view settings.
-                </p>
-            </div>
-            <button onClick={onLoginReq} className="bg-primary text-secondary px-8 py-3.5 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
-                Log In
-            </button>
-        </div>
-      );
-  }
-
+  if (!auth.currentUser) return null; // Or Login required view
   if (loading) return <div className="pt-40 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
   return (
@@ -101,7 +92,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
             <p className="text-sm text-gray-500 font-medium">{userProfile?.phoneNumber || userProfile?.email}</p>
         </div>
 
-        {/* Stats Grid - Hide bookings count if package user? Or show package stats */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-8">
              {userProfile?.activePackage?.isActive ? (
                  <div className="bg-gradient-to-br from-secondary to-slate-800 text-white p-5 rounded-[24px] border border-white/10 shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden">
@@ -109,8 +100,9 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
                     <div className="w-10 h-10 bg-white/10 text-primary rounded-full flex items-center justify-center mb-2 backdrop-blur-sm">
                         <Package size={20} />
                     </div>
-                    <p className="text-2xl font-black">{userProfile.activePackage.sessionsUsed} / {userProfile.activePackage.totalSessions}</p>
-                    <p className="text-[10px] font-bold opacity-60 uppercase tracking-wide">Sessions Used</p>
+                    {/* Hiding progress bar logic as per request */}
+                    <p className="text-2xl font-black">Active</p> 
+                    <p className="text-[10px] font-bold opacity-60 uppercase tracking-wide">Package Status</p>
                  </div>
              ) : (
                 <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-soft flex flex-col items-center justify-center text-center">
@@ -131,7 +123,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
             </div>
         </div>
 
-        {/* Active Package Card (If exists) */}
+        {/* Active Package Card (If exists) - Modified to hide progress */}
         {userProfile?.activePackage?.isActive && (
             <div className="mb-8 animate-in slide-in-from-bottom-4 duration-300">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Current Membership</h3>
@@ -146,19 +138,6 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
                         <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-secondary">
                              <Package size={24} />
                         </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                         <div className="flex justify-between text-xs font-bold text-gray-500">
-                             <span>Progress</span>
-                             <span>{userProfile.activePackage.sessionsUsed} of {userProfile.activePackage.totalSessions} Sessions</span>
-                         </div>
-                         <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
-                             <div 
-                                className="h-full bg-secondary rounded-full" 
-                                style={{width: `${(userProfile.activePackage.sessionsUsed / userProfile.activePackage.totalSessions) * 100}%`}}
-                             ></div>
-                         </div>
                     </div>
                 </div>
             </div>
@@ -181,16 +160,17 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
                 onClick={() => setActiveModal('ADDRESS')} 
             />
             
-            {/* Conditional Menu Item: Package Details vs Booking History */}
-            {userProfile?.activePackage?.isActive ? (
-                 <MenuItem 
-                    icon={<Package size={20} />} 
-                    label="My Package Details" 
-                    subLabel="View usage & validity"
-                    onClick={() => { /* Could open a modal or just rely on the card above */ }} 
-                    badge="Active"
+            {/* View Assessment Option */}
+            {userProfile?.latestAssessment && (
+                <MenuItem 
+                    icon={<ClipboardList size={20} />} 
+                    label="My Fitness Assessment" 
+                    subLabel="View your latest evaluation & goals"
+                    onClick={() => setActiveModal('ASSESSMENT')} 
                 />
-            ) : (
+            )}
+
+            {!userProfile?.activePackage?.isActive && (
                 <MenuItem 
                     icon={<Calendar size={20} />} 
                     label="Booking History" 
@@ -204,71 +184,43 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
         {/* Support & Legal */}
         <div className="mb-8">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Support & Legal</h3>
-            
-            <MenuItem 
-                icon={<Info size={20} />} 
-                label="About Zuryo" 
-                onClick={() => navigate('/about-us')} 
-            />
-            <MenuItem 
-                icon={<FileText size={20} />} 
-                label="Terms & Policies" 
-                onClick={() => navigate('/terms')} 
-            />
-            <MenuItem 
-                icon={<Phone size={20} />} 
-                label="Contact Support" 
-                onClick={() => navigate('/contact')} 
-            />
+            <MenuItem icon={<Info size={20} />} label="About Zuryo" onClick={() => navigate('/about-us')} />
+            <MenuItem icon={<FileText size={20} />} label="Terms & Policies" onClick={() => navigate('/terms')} />
+            <MenuItem icon={<Phone size={20} />} label="Contact Support" onClick={() => navigate('/contact')} />
         </div>
 
-        {/* New Contact Card */}
-        <div className="mb-8 bg-blue-50/50 rounded-[24px] p-6 border border-blue-100">
-             <div className="flex items-center gap-3 mb-4">
-                 <div className="w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-sm">
-                     <Headphones size={20} />
-                 </div>
-                 <div>
-                     <h3 className="font-bold text-secondary text-sm">Need Help?</h3>
-                     <p className="text-[10px] text-gray-500">We are here for you 24/7</p>
-                 </div>
-             </div>
-             <div className="space-y-3">
-                 <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                     <Phone size={16} className="text-primary" />
-                     <span className="text-xs font-bold text-gray-600">+91 73537 62555</span>
-                 </div>
-                 <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                     <Mail size={16} className="text-primary" />
-                     <span className="text-xs font-bold text-gray-600">founder@zuryo.co</span>
-                 </div>
-             </div>
-        </div>
-
-        <button 
-            onClick={onLogout}
-            className="w-full p-4 bg-red-50 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-        >
+        <button onClick={onLogout} className="w-full p-4 bg-red-50 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">
             <LogOut size={20} /> Log Out
         </button>
 
         <div className="mt-8 text-center pb-8">
-            <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Version 1.0.4</p>
+            <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Version 1.0.5</p>
         </div>
 
-        {/* Modals - Rendered outside the flow to prevent z-index issues */}
+        {/* Modals */}
         {activeModal === 'PERSONAL' && userProfile && (
             <PersonalDetailsModal 
                 profile={userProfile} 
                 onClose={() => setActiveModal(null)} 
+                onSave={handleUpdateProfile}
             />
         )}
 
         {activeModal === 'ADDRESS' && userProfile && (
-            <AddressModal 
-                profile={userProfile} 
-                onClose={() => setActiveModal(null)} 
-            />
+            <AddressModal profile={userProfile} onClose={() => setActiveModal(null)} />
+        )}
+
+        {activeModal === 'ASSESSMENT' && userProfile && userProfile.latestAssessment && (
+            <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+                    <button onClick={() => setActiveModal(null)} className="absolute top-4 right-4 z-50 bg-white rounded-full p-2 text-secondary shadow-lg"><X size={20} /></button>
+                    <AssessmentWizard 
+                        initialData={userProfile.latestAssessment} 
+                        isLocked={true}
+                        mode="USER_VIEW"
+                    />
+                </div>
+            </div>
         )}
     </div>
   );
@@ -278,8 +230,16 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
 
 const PersonalDetailsModal: React.FC<{ 
     profile: UserProfile, 
-    onClose: () => void 
-}> = ({ profile, onClose }) => {
+    onClose: () => void,
+    onSave: (data: Partial<UserProfile>) => void
+}> = ({ profile, onClose, onSave }) => {
+    const [formData, setFormData] = useState(profile);
+
+    const handleSave = () => {
+        onSave(formData);
+        onClose();
+    };
+
     return (
         <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center animate-in fade-in duration-200">
             <div className="bg-white w-full md:max-w-lg rounded-t-[32px] md:rounded-[32px] p-6 animate-in slide-in-from-bottom-10 duration-300 max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -290,118 +250,75 @@ const PersonalDetailsModal: React.FC<{
                     </button>
                 </div>
 
-                <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg mb-4 flex items-center gap-2 border border-yellow-100">
-                    <Lock size={14}/> Details are locked. Contact support to update.
-                </div>
-
                 <div className="space-y-4">
                     <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Full Name</label>
-                        <div className="relative mt-1">
-                            <UserCircle size={18} className="absolute left-3 top-3.5 text-gray-400" />
-                            <input type="text" value={profile.name || ''} disabled className="w-full p-3 pl-10 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Phone Number</label>
-                        <div className="relative mt-1">
-                            <Phone size={18} className="absolute left-3 top-3.5 text-gray-400" />
-                            <input type="tel" value={profile.phoneNumber || ''} disabled className="w-full p-3 pl-10 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500" />
-                        </div>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Full Name (Locked)</label>
+                        <input type="text" value={profile.name || ''} disabled className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-400 cursor-not-allowed mt-1" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Age</label>
-                            <input type="number" value={profile.age || ''} disabled className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 mt-1" />
+                            <input type="number" value={formData.age || ''} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full p-3 bg-white rounded-xl border border-gray-200 font-bold text-secondary mt-1" />
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Gender</label>
-                            <input type="text" value={profile.gender || ''} disabled className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 mt-1" />
+                            <select value={formData.gender || ''} onChange={e => setFormData({...formData, gender: e.target.value})} className="w-full p-3 bg-white rounded-xl border border-gray-200 font-bold text-secondary mt-1">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Height (cm)</label>
-                            <div className="relative mt-1">
-                                <Ruler size={16} className="absolute left-3 top-3.5 text-gray-400" />
-                                <input type="number" value={profile.height || ''} disabled className="w-full p-3 pl-9 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500" />
-                            </div>
+                            <input type="number" value={formData.height || ''} onChange={e => setFormData({...formData, height: e.target.value})} className="w-full p-3 bg-white rounded-xl border border-gray-200 font-bold text-secondary mt-1" />
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Weight (kg)</label>
-                            <div className="relative mt-1">
-                                <Weight size={16} className="absolute left-3 top-3.5 text-gray-400" />
-                                <input type="number" value={profile.weight || ''} disabled className="w-full p-3 pl-9 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500" />
-                            </div>
+                            <input type="number" value={formData.weight || ''} onChange={e => setFormData({...formData, weight: e.target.value})} className="w-full p-3 bg-white rounded-xl border border-gray-200 font-bold text-secondary mt-1" />
                         </div>
                     </div>
 
                     <div>
-                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Email</label>
-                         <div className="relative mt-1">
-                            <Mail size={18} className="absolute left-3 top-3.5 text-gray-400" />
-                            <input type="text" value={profile.email || ''} disabled className="w-full p-3 pl-10 bg-gray-50 rounded-xl border border-gray-200 text-gray-500 font-medium" />
-                         </div>
+                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Email (Locked)</label>
+                         <input type="text" value={profile.email || ''} disabled className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-400 cursor-not-allowed mt-1" />
                     </div>
+
+                    <button onClick={handleSave} className="w-full bg-secondary text-white py-4 rounded-xl font-bold shadow-lg mt-4">Save Changes</button>
                 </div>
             </div>
         </div>
     );
 };
 
-const AddressModal: React.FC<{ 
-    profile: UserProfile, 
-    onClose: () => void 
-}> = ({ profile, onClose }) => {
+const AddressModal: React.FC<{ profile: UserProfile, onClose: () => void }> = ({ profile, onClose }) => {
     return (
         <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center animate-in fade-in duration-200">
             <div className="bg-white w-full md:max-w-lg rounded-t-[32px] md:rounded-[32px] p-6 animate-in slide-in-from-bottom-10 duration-300 shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-black text-secondary">Manage Address</h2>
-                    <button onClick={onClose} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100">
-                        <X size={20} className="text-gray-500" />
-                    </button>
+                    <h2 className="text-xl font-black text-secondary">Address Details</h2>
+                    <button onClick={onClose} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100"><X size={20} className="text-gray-500" /></button>
                 </div>
-
                 <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg mb-4 flex items-center gap-2 border border-yellow-100">
-                    <Lock size={14}/> Addresses are locked. Contact support to update.
+                    <Lock size={14}/> Addresses are updated during bookings.
                 </div>
-
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Apartment</label>
-                            <input 
-                                type="text" 
-                                value={profile.apartmentName || ''} 
-                                disabled
-                                className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 mt-1" 
-                            />
+                            <input type="text" value={profile.apartmentName || ''} disabled className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 mt-1" />
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Flat No</label>
-                            <input 
-                                type="text" 
-                                value={profile.flatNo || ''} 
-                                disabled
-                                className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 mt-1" 
-                            />
+                            <input type="text" value={profile.flatNo || ''} disabled className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 mt-1" />
                         </div>
                     </div>
-
                     <div>
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide ml-1">Street Address</label>
-                        <div className="relative mt-1">
-                            <MapPin size={18} className="absolute left-3 top-3.5 text-gray-400" />
-                            <textarea 
-                                value={profile.address || ''} 
-                                disabled
-                                className="w-full p-3 pl-10 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 min-h-[100px] resize-none" 
-                            />
-                        </div>
+                        <textarea value={profile.address || ''} disabled className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-gray-500 min-h-[100px] resize-none mt-1" />
                     </div>
                 </div>
             </div>
