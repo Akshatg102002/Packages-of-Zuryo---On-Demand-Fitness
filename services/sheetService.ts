@@ -21,23 +21,23 @@ export const submitBookingToSheet = async (booking: Booking, user: UserProfile |
   // Keys match Sheet Columns roughly (CamelCase for script consumption)
   const payload = {
     action: "create_booking",
-    id: booking.id,
+    id: booking.id || Date.now().toString(),
     date: formattedDate,
-    time: booking.time,
-    category: booking.category,
+    time: booking.time || 'N/A',
+    category: booking.category || 'Fitness',
     customerName: booking.userName || user?.name || 'Guest',
     customerPhone: booking.userPhone || user?.phoneNumber || 'N/A',
-    location: booking.location,
-    status: booking.status,
-    trainerName: booking.trainerName,
-    price: booking.price,
+    location: booking.location || 'N/A',
+    status: booking.status || 'pending',
+    trainerName: booking.trainerName || 'Matching...',
+    price: booking.price || 0,
     paymentId: booking.paymentId || 'N/A',
     historyNotes: booking.sessionNotes || 'New Booking',
     
     // Legacy support fields just in case
     userName: booking.userName || user?.name || 'Guest',
     userPhone: booking.userPhone || user?.phoneNumber || 'N/A',
-    address: booking.location,
+    address: booking.location || 'N/A',
     apartment: booking.apartmentName || '',
     flat: booking.flatNo || ''
   };
@@ -69,15 +69,15 @@ export const submitProfileToSheet = async (user: UserProfile) => {
         name: user.name,
         phone: user.phoneNumber,
         email: user.email,
-        address: user.address,
-        apartment: user.apartmentName,
-        flat: user.flatNo,
-        age: user.age,
-        gender: user.gender,
-        height: user.height,
-        weight: user.weight,
-        goal: user.goal,
-        injuries: user.injuries
+        address: user.address || '',
+        apartment: user.apartmentName || '',
+        flat: user.flatNo || '',
+        age: user.age || '',
+        gender: user.gender || '',
+        height: user.height || '',
+        weight: user.weight || '',
+        goal: user.goal || '',
+        injuries: user.injuries || ''
     };
 
     try {

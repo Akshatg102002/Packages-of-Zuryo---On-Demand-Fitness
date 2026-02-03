@@ -99,19 +99,29 @@ export const getTrainerProfile = async (uid: string): Promise<any | null> => {
   }
 };
 
-// MODIFIED: Now accepts email and queries trainerEmail field
-export const getTrainerBookings = async (trainerEmail: string): Promise<Booking[]> => {
+// MODIFIED: Fetch by Email OR Name to support manual assignments
+export const getTrainerBookings = async (trainerEmail: string, trainerName?: string): Promise<Booking[]> => {
     try {
-        if (!trainerEmail) return [];
-        // Ensure lowercase for comparison
-        const emailToQuery = trainerEmail.toLowerCase().trim();
-        const snap = await db.collection("bookings").where("trainerEmail", "==", emailToQuery).get();
-        
-        const data = snap.docs.map(doc => {
-            const d = doc.data() as Booking;
-            // Ensure ID is set from doc.id if missing
-            return { ...d, id: doc.id };
-        });
+        const bookingsMap = new Map<string, Booking>();
+
+        // 1. Fetch by Email (if authenticated properly)
+        if (trainerEmail) {
+            const emailQuery = trainerEmail.toLowerCase().trim();
+            const snap = await db.collection("bookings").where("trainerEmail", "==", emailQuery).get();
+            snap.docs.forEach(doc => {
+                bookingsMap.set(doc.id, { ...doc.data(), id: doc.id } as Booking);
+            });
+        }
+
+        // 2. Fetch by Name (Fallback for manual admin assignment)
+        if (trainerName) {
+             const snapName = await db.collection("bookings").where("trainerName", "==", trainerName).get();
+             snapName.docs.forEach(doc => {
+                 bookingsMap.set(doc.id, { ...doc.data(), id: doc.id } as Booking);
+             });
+        }
+
+        const data = Array.from(bookingsMap.values());
         return data.sort((a, b) => b.createdAt - a.createdAt);
     } catch(e) {
         console.error("Error fetching trainer bookings", e);
