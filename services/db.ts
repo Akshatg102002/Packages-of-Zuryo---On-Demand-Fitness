@@ -18,6 +18,16 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   }
 };
 
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+    try {
+        const snap = await db.collection("users").get();
+        return snap.docs.map(doc => doc.data() as UserProfile);
+    } catch (e) {
+        console.error("Error fetching all users", e);
+        return [];
+    }
+};
+
 export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
   try {
     await db.collection("users").doc(profile.uid).set(profile, { merge: true });
@@ -76,6 +86,27 @@ export const getBookings = async (uid: string): Promise<Booking[]> => {
   }
 };
 
+export const getAllBookings = async (): Promise<Booking[]> => {
+    try {
+        const snap = await db.collection("bookings").get();
+        const data = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Booking));
+        // Sort by date descending
+        return data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } catch (e) {
+        console.error("Error fetching all bookings", e);
+        return [];
+    }
+};
+
+export const updateBooking = async (bookingId: string, updates: Partial<Booking>): Promise<void> => {
+    try {
+        await db.collection("bookings").doc(bookingId).update(updates);
+    } catch (e) {
+        console.error("Error updating booking", e);
+        throw e;
+    }
+};
+
 export const cancelBooking = async (bookingId: string): Promise<void> => {
   try {
     await db.collection("bookings").doc(bookingId).update({ status: 'cancelled' });
@@ -99,7 +130,7 @@ export const getTrainerProfile = async (uid: string): Promise<any | null> => {
   }
 };
 
-// MODIFIED: Fetch by Email OR Name to support manual assignments
+// Modified to search by Email OR Name
 export const getTrainerBookings = async (trainerEmail: string, trainerName?: string): Promise<Booking[]> => {
     try {
         const bookingsMap = new Map<string, Booking>();

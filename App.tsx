@@ -9,6 +9,7 @@ import { Profile } from './pages/Profile';
 import { BookSession } from './pages/BookSession';
 import { About, Contact, Policies, Terms, RefundPolicy, POSHPolicy } from './pages/StaticPages';
 import { TrainerPortal } from './pages/TrainerPortal';
+import { AdminDashboard } from './pages/AdminDashboard'; // Import the new dashboard
 import { ResetPassword } from './pages/ResetPassword';
 import { Onboarding } from './components/Onboarding';
 import { Auth } from './components/Auth';
@@ -81,8 +82,10 @@ const PageLoader = () => {
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
-    // Hide navbars on onboarding or specific routes if needed
-    const showNav = location.pathname !== '/onboarding' && location.pathname !== '/reset-password'; 
+    // Hide navbars on specific routes (onboarding, reset-password, admin/working portal)
+    const showNav = location.pathname !== '/onboarding' && 
+                    location.pathname !== '/reset-password' && 
+                    location.pathname !== '/working';
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans w-full overflow-hidden select-none text-secondary">
@@ -179,6 +182,7 @@ export const App: React.FC = () => {
                     />
                 } />
                 <Route path="/trainer-portal" element={<TrainerPortal />} />
+                <Route path="/working" element={<AdminDashboard />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 
                 {/* Static Pages */}
