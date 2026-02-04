@@ -4,7 +4,7 @@ import { TESTIMONIALS, SUCCESS_STORIES } from '../constants';
 import { UserProfile } from '../types';
 import { getUserProfile } from '../services/db';
 import { auth } from '../services/firebase';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 const RevealOnScroll: React.FC<{ children: React.ReactNode, delay?: number }> = ({ children, delay = 0 }) => {
     const [isVisible, setIsVisible] = useState(false);
@@ -32,7 +32,7 @@ const RevealOnScroll: React.FC<{ children: React.ReactNode, delay?: number }> = 
 };
 
 export const Home: React.FC = () => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const [user, setUser] = useState<UserProfile | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const successScrollRef = useRef<HTMLDivElement>(null);
@@ -115,7 +115,7 @@ export const Home: React.FC = () => {
         
         <div className="flex items-center gap-4">
             <div 
-                onClick={() => navigate('/profile')}
+                onClick={() => history.push('/profile')}
                 className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm cursor-pointer bg-white"
             >
                 <div className="w-full h-full bg-secondary flex items-center justify-center text-white font-bold text-sm">
@@ -167,7 +167,7 @@ export const Home: React.FC = () => {
                     {/* CTA Button */}
                     <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
                         <button 
-                            onClick={() => navigate('/book')}
+                            onClick={() => history.push('/book')}
                             className="group relative bg-primary text-secondary px-10 py-5 rounded-full font-black text-lg shadow-[0_0_40px_-10px_rgba(255,180,53,0.6)] hover:shadow-[0_0_60px_-15px_rgba(255,180,53,0.8)] hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 w-full md:w-auto"
                         >
                             <Zap size={24} fill="currentColor" />

@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
-import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserCircle, ShieldCheck, Calendar, Lock, Loader2, X, Ruler, Weight, Activity, Mail, Package, CheckCircle, Headphones, ClipboardList } from 'lucide-react';
+import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserCircle, ShieldCheck, Calendar, Lock, Loader2, X, Ruler, Weight, Activity, Mail, Package, CheckCircle, Headphones, ClipboardList, Clock } from 'lucide-react';
 import { Booking, UserProfile } from '../types';
 import { getBookings, getUserProfile, logoutUser, saveUserProfile } from '../services/db';
 import { auth } from '../services/firebase';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { submitProfileToSheet } from '../services/sheetService';
 import { useToast } from '../components/ToastContext';
 import { AssessmentWizard } from '../components/AssessmentWizard';
@@ -15,7 +14,7 @@ interface ProfileProps {
 }
 
 export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
-  const navigate = useNavigate();
+  const history = useHistory();
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -143,6 +142,37 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
             </div>
         )}
 
+        {/* Session History */}
+        {userProfile?.sessionHistory && userProfile.sessionHistory.length > 0 && (
+            <div className="mb-8 animate-in slide-in-from-bottom-4 duration-300">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Session History</h3>
+                <div className="space-y-3">
+                    {userProfile.sessionHistory.slice().reverse().map((session, idx) => (
+                        <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-2">
+                            <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+                                <div className="flex items-center gap-2 text-gray-500 text-xs font-bold">
+                                    <Clock size={12}/> {new Date(session.date).toLocaleDateString()}
+                                </div>
+                                <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded font-bold uppercase">Completed</span>
+                            </div>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs text-gray-400 uppercase font-bold mb-1">Trainer</p>
+                                    <p className="text-sm font-bold text-secondary">{session.trainerName}</p>
+                                </div>
+                                {session.activitiesDone && (
+                                    <div className="text-right max-w-[60%]">
+                                        <p className="text-xs text-gray-400 uppercase font-bold mb-1">Workout</p>
+                                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{session.activitiesDone}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {/* Account Settings */}
         <div className="mb-8">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Account Settings</h3>
@@ -175,7 +205,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
                     icon={<Calendar size={20} />} 
                     label="Booking History" 
                     subLabel="View past and upcoming sessions"
-                    onClick={() => navigate('/bookings')} 
+                    onClick={() => history.push('/bookings')} 
                     badge={bookings.filter(b => b.status === 'confirmed').length > 0 ? `${bookings.filter(b => b.status === 'confirmed').length}` : undefined}
                 />
             )}
@@ -184,9 +214,9 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
         {/* Support & Legal */}
         <div className="mb-8">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Support & Legal</h3>
-            <MenuItem icon={<Info size={20} />} label="About Zuryo" onClick={() => navigate('/about-us')} />
-            <MenuItem icon={<FileText size={20} />} label="Terms & Policies" onClick={() => navigate('/terms')} />
-            <MenuItem icon={<Phone size={20} />} label="Contact Support" onClick={() => navigate('/contact')} />
+            <MenuItem icon={<Info size={20} />} label="About Zuryo" onClick={() => history.push('/about-us')} />
+            <MenuItem icon={<FileText size={20} />} label="Terms & Policies" onClick={() => history.push('/terms')} />
+            <MenuItem icon={<Phone size={20} />} label="Contact Support" onClick={() => history.push('/contact')} />
         </div>
 
         <button onClick={onLogout} className="w-full p-4 bg-red-50 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">

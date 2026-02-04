@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Calendar, LocateFixed, Loader2, Clock, MapPin, CheckCircle, CreditCard, Sun, Moon, Sparkles, Star, Package } from 'lucide-react';
 import { CATEGORIES, PACKAGES } from '../constants';
@@ -6,7 +5,7 @@ import { Booking, UserProfile, UserPackage } from '../types';
 import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage } from '../services/db';
 import { submitBookingToSheet, submitPackageToSheet } from '../services/sheetService';
 import firebase from 'firebase/compat/app';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 
 interface BookSessionProps {
@@ -16,7 +15,7 @@ interface BookSessionProps {
 }
 
 export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfile, onLoginReq }) => {
-    const navigate = useNavigate();
+    const history = useHistory();
     const { showToast } = useToast();
     
     // Booking Type State: 'SESSION' (default) or 'PACKAGE'
@@ -72,7 +71,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                         You have an active <span className="text-secondary font-bold">{userProfile.activePackage.name}</span> plan.
                     </p>
                 </div>
-                <button onClick={() => navigate('/profile')} className="text-primary font-bold text-sm underline">
+                <button onClick={() => history.push('/profile')} className="text-primary font-bold text-sm underline">
                     View Membership
                 </button>
             </div>
@@ -300,7 +299,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         
         showToast("Booking Confirmed!", "success");
         setIsProcessing(false);
-        navigate('/bookings');
+        history.push('/bookings');
     };
 
     const finalizePackagePurchase = async (paymentId: string, pkg: { id: string, name: string, price: number, sessions: number }) => {
@@ -326,7 +325,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
         showToast("Package Purchased!", "success");
         setIsProcessing(false);
-        navigate('/profile'); 
+        history.push('/profile'); 
     };
 
     // Step labels
@@ -397,24 +396,29 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                     ))}
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                    {PACKAGES.map(pkg => (
-                                        <button
-                                            key={pkg.id}
-                                            onClick={() => setSelectedPackageId(pkg.id)}
-                                            className={`relative p-6 rounded-3xl border-2 transition-all flex flex-col text-left gap-4 ${
-                                                selectedPackageId === pkg.id ? 'border-primary bg-secondary text-white' : 'border-gray-100 bg-white'
-                                            }`}
-                                        >
-                                            <div className="flex justify-between items-start w-full">
-                                                <div>
-                                                    <h3 className={`text-xl font-black ${selectedPackageId === pkg.id ? 'text-white' : 'text-secondary'}`}>{pkg.name}</h3>
-                                                    <p className={`text-2xl font-black ${selectedPackageId === pkg.id ? 'text-primary' : 'text-secondary'}`}>₹{pkg.price}</p>
+                                <div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        {PACKAGES.map(pkg => (
+                                            <button
+                                                key={pkg.id}
+                                                onClick={() => setSelectedPackageId(pkg.id)}
+                                                className={`relative p-6 rounded-3xl border-2 transition-all flex flex-col text-left gap-4 ${
+                                                    selectedPackageId === pkg.id 
+                                                    ? 'border-primary bg-secondary text-white shadow-xl shadow-secondary/20' 
+                                                    : 'border-gray-200 bg-gradient-to-br from-white to-gray-50 text-secondary'
+                                                }`}
+                                            >
+                                                <div className="flex justify-between items-start w-full">
+                                                    <div>
+                                                        <h3 className={`text-xl font-black ${selectedPackageId === pkg.id ? 'text-white' : 'text-secondary'}`}>{pkg.name}</h3>
+                                                        <p className={`text-2xl font-black ${selectedPackageId === pkg.id ? 'text-primary' : 'text-secondary'}`}>₹{pkg.price}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            {selectedPackageId === pkg.id && <div className="absolute top-3 right-3 text-white"><CheckCircle size={24} className="text-primary" /></div>}
-                                        </button>
-                                    ))}
+                                                {selectedPackageId === pkg.id && <div className="absolute top-3 right-3 text-white"><CheckCircle size={24} className="text-primary" /></div>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-center text-gray-400 font-bold mb-6">Please contact support at 7353762555 for sessions tracking.</p>
                                 </div>
                             )}
                             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mt-2">

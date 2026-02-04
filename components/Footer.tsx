@@ -1,9 +1,9 @@
 import React from 'react';
 import { Facebook, Twitter, Instagram, Linkedin, MapPin, Mail, Phone } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
-  const navigate = useNavigate();
+  const history = useHistory();
 
   return (
     <footer className="bg-[#0b1736] pt-20 pb-10 hidden md:block text-white rounded-t-[40px] mt-12 mx-4 md:mx-0">
@@ -35,10 +35,10 @@ export const Footer: React.FC = () => {
           <div className="col-span-1">
             <h4 className="font-bold text-white mb-6 text-lg">Quick Links</h4>
             <ul className="space-y-4 text-sm font-medium text-gray-400">
-              <li><button onClick={() => navigate('/')} className="hover:text-primary transition-colors">Home</button></li>
-              <li><button onClick={() => navigate('/book')} className="hover:text-primary transition-colors">Book a Session</button></li>
-              <li><button onClick={() => navigate('/trainers')} className="hover:text-primary transition-colors">Find Trainers</button></li>
-              <li><button onClick={() => navigate('/profile')} className="hover:text-primary transition-colors">My Profile</button></li>
+              <li><button onClick={() => history.push('/')} className="hover:text-primary transition-colors">Home</button></li>
+              <li><button onClick={() => history.push('/book')} className="hover:text-primary transition-colors">Book a Session</button></li>
+              <li><button onClick={() => history.push('/trainers')} className="hover:text-primary transition-colors">Find Trainers</button></li>
+              <li><button onClick={() => history.push('/profile')} className="hover:text-primary transition-colors">My Profile</button></li>
             </ul>
           </div>
 
@@ -46,11 +46,11 @@ export const Footer: React.FC = () => {
           <div className="col-span-1">
             <h4 className="font-bold text-white mb-6 text-lg">Company</h4>
             <ul className="space-y-4 text-sm font-medium text-gray-400">
-              <li><button onClick={() => navigate('/about-us')} className="hover:text-primary transition-colors">About Us</button></li>
-              <li><button onClick={() => navigate('/terms')} className="hover:text-primary transition-colors">Terms & Conditions</button></li>
-              <li><button onClick={() => navigate('/privacy-policy')} className="hover:text-primary transition-colors">Privacy Policy</button></li>
-              <li><button onClick={() => navigate('/refund-policy')} className="hover:text-primary transition-colors">Refund Policy</button></li>
-              <li><button onClick={() => navigate('/posh-policy')} className="hover:text-primary transition-colors">POSH Policy</button></li>
+              <li><button onClick={() => history.push('/about-us')} className="hover:text-primary transition-colors">About Us</button></li>
+              <li><button onClick={() => history.push('/terms')} className="hover:text-primary transition-colors">Terms & Conditions</button></li>
+              <li><button onClick={() => history.push('/privacy-policy')} className="hover:text-primary transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => history.push('/refund-policy')} className="hover:text-primary transition-colors">Refund Policy</button></li>
+              <li><button onClick={() => history.push('/posh-policy')} className="hover:text-primary transition-colors">POSH Policy</button></li>
             </ul>
           </div>
 

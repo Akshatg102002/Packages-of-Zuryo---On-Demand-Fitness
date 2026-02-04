@@ -1,23 +1,58 @@
 
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key } from 'lucide-react';
+import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key, Loader2 } from 'lucide-react';
 import { getAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount } from '../services/db';
 import { Booking, UserProfile } from '../types';
 import { useToast } from '../components/ToastContext';
 import { MOCK_TRAINERS } from '../constants';
+import { auth } from '../services/firebase';
 
 export const AdminDashboard: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if(email === 'admin@zuryo.co' && password === 'admin123') {
-            setIsAuthenticated(true);
-        } else {
-            setError('Invalid Admin Credentials');
+        setError('');
+        setIsLoggingIn(true);
+
+        try {
+            // First, validate credentials hardcoded for this specific request
+            if(email === 'admin@zuryo.co' && password === 'admin123') {
+                // Try to login to Firebase to get permissions
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                } catch (firebaseErr: any) {
+                    // If user not found, create it (Bootstrap Admin)
+                    if (firebaseErr.code === 'auth/user-not-found') {
+                        try {
+                            await auth.createUserWithEmailAndPassword(email, password);
+                        } catch (createErr: any) {
+                            setError("Failed to create admin user: " + createErr.message);
+                            setIsLoggingIn(false);
+                            return;
+                        }
+                    } else if (firebaseErr.code === 'auth/wrong-password') {
+                        setError("Invalid Firebase Password (Sync Issue)");
+                        setIsLoggingIn(false);
+                        return;
+                    } else {
+                        setError("Auth Error: " + firebaseErr.message);
+                        setIsLoggingIn(false);
+                        return;
+                    }
+                }
+                setIsAuthenticated(true);
+            } else {
+                setError('Invalid Admin Credentials');
+            }
+        } catch (e: any) {
+            setError(e.message || 'Login failed');
+        } finally {
+            setIsLoggingIn(false);
         }
     };
 
@@ -45,7 +80,10 @@ export const AdminDashboard: React.FC = () => {
                             onChange={e => setPassword(e.target.value)}
                         />
                         {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
-                        <button type="submit" className="w-full bg-secondary text-white py-3 rounded-lg font-bold">Login</button>
+                        <button type="submit" disabled={isLoggingIn} className="w-full bg-secondary text-white py-3 rounded-lg font-bold flex justify-center items-center gap-2">
+                            {isLoggingIn && <Loader2 size={16} className="animate-spin" />}
+                            Login
+                        </button>
                     </form>
                 </div>
             </div>
