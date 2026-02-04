@@ -26,17 +26,25 @@ export const AdminDashboard: React.FC = () => {
                 try {
                     await auth.signInWithEmailAndPassword(email, password);
                 } catch (firebaseErr: any) {
-                    // If user not found, create it (Bootstrap Admin)
-                    if (firebaseErr.code === 'auth/user-not-found') {
+                    console.error("Firebase Auth Error:", firebaseErr);
+                    
+                    // Handle cases where user doesn't exist OR generic invalid credential (common with enumeration protection)
+                    if (firebaseErr.code === 'auth/user-not-found' || firebaseErr.code === 'auth/invalid-credential') {
                         try {
+                            // Bootstrap: Create the admin user if they don't exist
                             await auth.createUserWithEmailAndPassword(email, password);
                         } catch (createErr: any) {
-                            setError("Failed to create admin user: " + createErr.message);
+                            // If creation fails because email taken, it means the password was actually wrong in the first step
+                            if (createErr.code === 'auth/email-already-in-use') {
+                                setError("Incorrect password for existing admin account.");
+                            } else {
+                                setError("Failed to initialize admin account: " + createErr.message);
+                            }
                             setIsLoggingIn(false);
                             return;
                         }
                     } else if (firebaseErr.code === 'auth/wrong-password') {
-                        setError("Invalid Firebase Password (Sync Issue)");
+                        setError("Invalid Firebase Password.");
                         setIsLoggingIn(false);
                         return;
                     } else {
@@ -79,7 +87,7 @@ export const AdminDashboard: React.FC = () => {
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                         />
-                        {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+                        {error && <p className="text-red-500 text-xs font-bold text-center bg-red-50 p-2 rounded">{error}</p>}
                         <button type="submit" disabled={isLoggingIn} className="w-full bg-secondary text-white py-3 rounded-lg font-bold flex justify-center items-center gap-2">
                             {isLoggingIn && <Loader2 size={16} className="animate-spin" />}
                             Login
