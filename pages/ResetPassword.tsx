@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../services/firebase';
 import { Lock, Eye, EyeOff, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 export const ResetPassword: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { search } = useLocation();
     const searchParams = new URLSearchParams(search);
     const oobCode = searchParams.get('oobCode'); // Firebase sends the code in this param
@@ -43,7 +44,7 @@ export const ResetPassword: React.FC = () => {
         try {
             await auth.confirmPasswordReset(oobCode, newPassword);
             setStatus('SUCCESS');
-            setTimeout(() => history.push('/'), 3000); // Redirect to login after 3s
+            setTimeout(() => navigate('/'), 3000); // Redirect to login after 3s
         } catch (err: any) {
             setStatus('ERROR');
             setErrorMsg(err.message || "Failed to reset password. The link may have expired.");
@@ -71,7 +72,7 @@ export const ResetPassword: React.FC = () => {
                         <h3 className="text-xl font-bold text-green-800 mb-2">Password Updated!</h3>
                         <p className="text-green-700 text-sm">You can now login with your new password.</p>
                         <p className="text-green-600/60 text-xs mt-4">Redirecting you to login...</p>
-                        <button onClick={() => history.push('/')} className="mt-6 w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors">
+                        <button onClick={() => navigate('/')} className="mt-6 w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors">
                             Go to Login
                         </button>
                     </div>

@@ -1,15 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, User as UserIcon, MapPin, CheckCircle, Save, Mail, Briefcase, Star, ArrowRight, Activity, Zap, ClipboardList, History, Phone, Home, LogOut, LayoutDashboard, Ruler, Move, Lock, RefreshCw, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Booking, AssessmentData, UserProfile, SessionLog } from '../types';
 import { getTrainerBookings, getUserProfile, saveAssessment, saveSessionLog, markBookingCompleted, getTrainerProfile } from '../services/db';
 import { updateSessionCompletion } from '../services/sheetService';
 import { auth, db } from '../services/firebase';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 import { AssessmentWizard } from '../components/AssessmentWizard';
 
 export const TrainerPortal: React.FC = () => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [trainerName, setTrainerName] = useState<string>(''); 
@@ -79,7 +80,7 @@ export const TrainerPortal: React.FC = () => {
         setCurrentUser(null);
         setTrainerName('');
         setTrainerEmail('');
-        history.push('/'); 
+        navigate('/'); 
     };
 
     const getNextSession = () => {
@@ -90,7 +91,7 @@ export const TrainerPortal: React.FC = () => {
     const nextSession = getNextSession();
 
     if (view === 'AUTH') {
-        return <TrainerAuth onLogin={() => {}} onBack={() => history.push('/')} />;
+        return <TrainerAuth onLogin={() => {}} onBack={() => navigate('/')} />;
     }
 
     if (view === 'SESSION' && selectedBooking && clientProfile) {

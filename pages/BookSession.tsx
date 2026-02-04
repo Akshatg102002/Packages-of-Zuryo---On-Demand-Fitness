@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Calendar, LocateFixed, Loader2, Clock, MapPin, CheckCircle, CreditCard, Sun, Moon, Sparkles, Star, Package } from 'lucide-react';
 import { CATEGORIES, PACKAGES } from '../constants';
@@ -5,7 +6,7 @@ import { Booking, UserProfile, UserPackage } from '../types';
 import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage } from '../services/db';
 import { submitBookingToSheet, submitPackageToSheet } from '../services/sheetService';
 import firebase from 'firebase/compat/app';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 
 interface BookSessionProps {
@@ -15,7 +16,7 @@ interface BookSessionProps {
 }
 
 export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfile, onLoginReq }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     
     // Booking Type State: 'SESSION' (default) or 'PACKAGE'
@@ -71,7 +72,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                         You have an active <span className="text-secondary font-bold">{userProfile.activePackage.name}</span> plan.
                     </p>
                 </div>
-                <button onClick={() => history.push('/profile')} className="text-primary font-bold text-sm underline">
+                <button onClick={() => navigate('/profile')} className="text-primary font-bold text-sm underline">
                     View Membership
                 </button>
             </div>
@@ -299,7 +300,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         
         showToast("Booking Confirmed!", "success");
         setIsProcessing(false);
-        history.push('/bookings');
+        navigate('/bookings');
     };
 
     const finalizePackagePurchase = async (paymentId: string, pkg: { id: string, name: string, price: number, sessions: number }) => {
@@ -325,7 +326,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
         showToast("Package Purchased!", "success");
         setIsProcessing(false);
-        history.push('/profile'); 
+        navigate('/profile'); 
     };
 
     // Step labels
@@ -402,23 +403,30 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                             <button
                                                 key={pkg.id}
                                                 onClick={() => setSelectedPackageId(pkg.id)}
-                                                className={`relative p-6 rounded-3xl border-2 transition-all flex flex-col text-left gap-4 ${
+                                                className={`relative p-6 rounded-3xl border-2 transition-all flex flex-col text-left gap-4 overflow-hidden ${
                                                     selectedPackageId === pkg.id 
                                                     ? 'border-primary bg-secondary text-white shadow-xl shadow-secondary/20' 
-                                                    : 'border-gray-200 bg-gradient-to-br from-white to-gray-50 text-secondary'
+                                                    : 'border-transparent bg-gradient-to-br from-secondary to-[#1e3a8a] text-white shadow-lg'
                                                 }`}
                                             >
-                                                <div className="flex justify-between items-start w-full">
+                                                {/* Background decoration for package cards */}
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10 blur-xl"></div>
+                                                
+                                                <div className="flex justify-between items-start w-full relative z-10">
                                                     <div>
-                                                        <h3 className={`text-xl font-black ${selectedPackageId === pkg.id ? 'text-white' : 'text-secondary'}`}>{pkg.name}</h3>
-                                                        <p className={`text-2xl font-black ${selectedPackageId === pkg.id ? 'text-primary' : 'text-secondary'}`}>₹{pkg.price}</p>
+                                                        <h3 className={`text-xl font-black ${selectedPackageId === pkg.id ? 'text-white' : 'text-white'}`}>{pkg.name}</h3>
+                                                        <p className={`text-2xl font-black mt-1 ${selectedPackageId === pkg.id ? 'text-primary' : 'text-primary'}`}>₹{pkg.price}</p>
+                                                        <p className="text-[10px] opacity-70 mt-1 uppercase font-bold tracking-wider">{pkg.sessions} Sessions</p>
                                                     </div>
                                                 </div>
                                                 {selectedPackageId === pkg.id && <div className="absolute top-3 right-3 text-white"><CheckCircle size={24} className="text-primary" /></div>}
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-xs text-center text-gray-400 font-bold mb-6">Please contact support at 7353762555 for sessions tracking.</p>
+                                    <p className="text-xs text-center text-gray-400 font-bold mb-6 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                        For sessions tracking: <br/>
+                                        <span className="text-secondary select-all">Please contact support at 7353762555</span>
+                                    </p>
                                 </div>
                             )}
                             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mt-2">

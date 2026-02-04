@@ -1,17 +1,18 @@
+
 import React, { useEffect, useState } from 'react';
 import { Calendar, Clock, Trash2, CalendarCheck, Loader2, Lock, ArrowRight, Ban, CheckCircle, RefreshCw, AlertTriangle, MapPin, User, Navigation } from 'lucide-react';
 import { Booking } from '../types';
 import { getBookings, cancelBooking } from '../services/db';
 import { auth } from '../services/firebase';
 import { useToast } from '../components/ToastContext';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface BookingsProps {
     onLoginReq?: () => void;
 }
 
 export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
       if(confirm('Rescheduling involves cancelling this slot and booking a new one. Proceed?')) {
           await cancelBooking(id);
           showToast("Previous slot cancelled. Please choose a new time.", "success");
-          history.push('/book');
+          navigate('/book');
       }
   };
 
@@ -123,7 +124,7 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
                 </p>
                 
                 {activeTab === 'upcoming' && (
-                    <div className="text-primary font-bold flex items-center gap-2 text-sm animate-pulse cursor-pointer" onClick={() => history.push('/book')}>
+                    <div className="text-primary font-bold flex items-center gap-2 text-sm animate-pulse cursor-pointer" onClick={() => navigate('/book')}>
                         Head to Home to Book <ArrowRight size={16}/>
                     </div>
                 )}
@@ -162,7 +163,7 @@ const BookingCard: React.FC<{
     onCancel: (id: string) => void,
     onReschedule: (id: string) => void 
 }> = ({ booking, onCancel, onReschedule }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     
     // Helper to parse date/time string to Date object
     const getBookingDateTime = (dateStr: string, timeStr: string) => {
@@ -287,7 +288,7 @@ const BookingCard: React.FC<{
                 )}
 
                 {isCompleted && (
-                    <button onClick={() => history.push('/book')} className="w-full py-3.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl bg-primary text-secondary shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+                    <button onClick={() => navigate('/book')} className="w-full py-3.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl bg-primary text-secondary shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
                         <RefreshCw size={14} /> Book Again
                     </button>
                 )}

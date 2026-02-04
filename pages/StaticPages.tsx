@@ -1,12 +1,13 @@
+
 import React from 'react';
 import { ArrowLeft, Mail, Phone, MapPin } from 'lucide-react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const PageHeader: React.FC<{ title: string, subtitle?: string }> = ({ title, subtitle }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     return (
         <div className="mb-8">
-            <button onClick={() => history.goBack()} className="mb-6 flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-secondary">
+            <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-secondary">
                 <ArrowLeft size={16} /> Back
             </button>
             <h1 className="text-3xl font-extrabold text-secondary mb-2">{title}</h1>
