@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter, Switch, Route, useLocation, Redirect } from 'react-router-dom';
 import { Booking, UserProfile } from './types';
 import { BottomNav, TopNav } from './components/BottomNav';
 import { Home } from './pages/Home';
@@ -163,37 +163,39 @@ export const App: React.FC = () => {
         
         <AppLayout>
             <PageLoader />
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/book" element={
+            <Switch>
+                <Route exact path="/" component={Home} />
+                <Route path="/book">
                     <BookSession 
                         currentUser={currentUser} 
                         userProfile={userProfile} 
                         onLoginReq={openAuth} 
                     />
-                } />
-                <Route path="/trainers" element={<Trainers />} />
-                <Route path="/bookings" element={<Bookings onLoginReq={openAuth} />} />
-                <Route path="/profile" element={
+                </Route>
+                <Route path="/trainers" component={Trainers} />
+                <Route path="/bookings">
+                    <Bookings onLoginReq={openAuth} />
+                </Route>
+                <Route path="/profile">
                     <Profile 
                         onLogout={handleLogout} 
                         onLoginReq={openAuth} 
                     />
-                } />
-                <Route path="/trainer-portal" element={<TrainerPortal />} />
-                <Route path="/working" element={<AdminDashboard />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+                </Route>
+                <Route path="/trainer-portal" component={TrainerPortal} />
+                <Route path="/working" component={AdminDashboard} />
+                <Route path="/reset-password" component={ResetPassword} />
                 
                 {/* Static Pages */}
-                <Route path="/about-us" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy-policy" element={<Policies />} />
-                <Route path="/refund-policy" element={<RefundPolicy />} />
-                <Route path="/posh-policy" element={<POSHPolicy />} />
+                <Route path="/about-us" component={About} />
+                <Route path="/contact" component={Contact} />
+                <Route path="/terms" component={Terms} />
+                <Route path="/privacy-policy" component={Policies} />
+                <Route path="/refund-policy" component={RefundPolicy} />
+                <Route path="/posh-policy" component={POSHPolicy} />
 
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Redirect to="/" />
+            </Switch>
         </AppLayout>
 
         {/* Auth Modal */}

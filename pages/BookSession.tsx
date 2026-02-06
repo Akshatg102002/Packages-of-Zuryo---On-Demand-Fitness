@@ -6,7 +6,7 @@ import { Booking, UserProfile, UserPackage } from '../types';
 import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage } from '../services/db';
 import { submitBookingToSheet, submitPackageToSheet } from '../services/sheetService';
 import firebase from 'firebase/compat/app';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 
 interface BookSessionProps {
@@ -16,7 +16,7 @@ interface BookSessionProps {
 }
 
 export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfile, onLoginReq }) => {
-    const navigate = useNavigate();
+    const history = useHistory();
     const { showToast } = useToast();
     
     // Booking Type State: 'SESSION' (default) or 'PACKAGE'
@@ -58,26 +58,6 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [step]);
-
-    // --- Active Package Check ---
-    if (userProfile?.activePackage?.isActive) {
-        return (
-            <div className="pt-32 px-6 flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6">
-                <div className="w-24 h-24 bg-gradient-to-br from-primary to-orange-400 rounded-full flex items-center justify-center text-white shadow-xl shadow-primary/30">
-                    <Package size={40} />
-                </div>
-                <div>
-                    <h2 className="text-2xl font-extrabold text-secondary mb-2">Active Package Found</h2>
-                    <p className="text-gray-500 max-w-[280px] mx-auto text-sm leading-relaxed mb-2">
-                        You have an active <span className="text-secondary font-bold">{userProfile.activePackage.name}</span> plan.
-                    </p>
-                </div>
-                <button onClick={() => navigate('/profile')} className="text-primary font-bold text-sm underline">
-                    View Membership
-                </button>
-            </div>
-        );
-    }
 
     // --- Logic for Date & Time ---
     const getNext3Days = () => {
@@ -266,10 +246,8 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     const finalizeBooking = async (paymentId: string) => {
         if (!currentUser || !selectedCategory || !selectedTime || !selectedDate) return;
 
-        // Fetch session history notes from profile to pass to new booking
         let historyNotes = "First Session";
         if (userProfile && userProfile.sessionHistory && userProfile.sessionHistory.length > 0) {
-            // Get the last session's activities
             const lastSession = userProfile.sessionHistory[userProfile.sessionHistory.length - 1];
             if (lastSession.activitiesDone) {
                 historyNotes = lastSession.activitiesDone;
@@ -300,7 +278,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         
         showToast("Booking Confirmed!", "success");
         setIsProcessing(false);
-        navigate('/bookings');
+        history.push('/bookings');
     };
 
     const finalizePackagePurchase = async (paymentId: string, pkg: { id: string, name: string, price: number, sessions: number }) => {
@@ -326,7 +304,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
         showToast("Package Purchased!", "success");
         setIsProcessing(false);
-        navigate('/profile'); 
+        history.push('/profile'); 
     };
 
     // Step labels
@@ -391,6 +369,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                             </div>
                                             <div className="text-left w-full">
                                                 <span className={`font-black text-base ${selectedCategory === cat.id ? 'text-white' : 'text-secondary'}`}>{cat.name}</span>
+                                                {!cat.active && <p className="text-[10px] font-bold text-gray-400 mt-1">Coming Soon</p>}
                                             </div>
                                             {selectedCategory === cat.id && <div className="absolute top-3 right-3 text-white"><CheckCircle size={20} className="text-primary" /></div>}
                                         </button>
@@ -403,20 +382,17 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                             <button
                                                 key={pkg.id}
                                                 onClick={() => setSelectedPackageId(pkg.id)}
-                                                className={`relative p-6 rounded-3xl border-2 transition-all flex flex-col text-left gap-4 overflow-hidden ${
+                                                className={`relative p-6 rounded-3xl border-2 transition-all flex flex-col text-left gap-4 ${
                                                     selectedPackageId === pkg.id 
-                                                    ? 'border-primary bg-secondary text-white shadow-xl shadow-secondary/20' 
-                                                    : 'border-transparent bg-gradient-to-br from-secondary to-[#1e3a8a] text-white shadow-lg'
+                                                    ? 'border-secondary bg-secondary text-white shadow-xl shadow-secondary/20' 
+                                                    : 'border-gray-200 bg-white text-secondary hover:border-gray-300'
                                                 }`}
                                             >
-                                                {/* Background decoration for package cards */}
-                                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10 blur-xl"></div>
-                                                
-                                                <div className="flex justify-between items-start w-full relative z-10">
+                                                <div className="flex justify-between items-start w-full">
                                                     <div>
-                                                        <h3 className={`text-xl font-black ${selectedPackageId === pkg.id ? 'text-white' : 'text-white'}`}>{pkg.name}</h3>
-                                                        <p className={`text-2xl font-black mt-1 ${selectedPackageId === pkg.id ? 'text-primary' : 'text-primary'}`}>₹{pkg.price}</p>
-                                                        <p className="text-[10px] opacity-70 mt-1 uppercase font-bold tracking-wider">{pkg.sessions} Sessions</p>
+                                                        <h3 className={`text-xl font-black ${selectedPackageId === pkg.id ? 'text-white' : 'text-secondary'}`}>{pkg.name}</h3>
+                                                        <p className={`text-2xl font-black ${selectedPackageId === pkg.id ? 'text-primary' : 'text-primary'}`}>₹{pkg.price}</p>
+                                                        <p className={`text-[10px] uppercase font-bold tracking-wider mt-1 ${selectedPackageId === pkg.id ? 'opacity-70' : 'text-gray-400'}`}>{pkg.sessions} Sessions</p>
                                                     </div>
                                                 </div>
                                                 {selectedPackageId === pkg.id && <div className="absolute top-3 right-3 text-white"><CheckCircle size={24} className="text-primary" /></div>}
@@ -439,8 +415,9 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                                     onChange={e=>setFormData(prev => ({ ...prev, address: e.target.value }))} 
                                     className="input-field bg-white min-h-[60px] resize-none" 
                                 />
-                                <div className="text-[10px] text-gray-500 mt-3 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                                    SERVING: <span className="font-black text-secondary text-xs">SARJAPUR, BELLANDUR, HSR LAYOUT</span>
+                                <div className="text-[10px] text-gray-500 mt-4 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                    <p className="mb-1 font-medium">We are Currently Serving in</p>
+                                    <p className="text-lg font-black text-secondary">SARJAPUR, BELLANDUR, HSR LAYOUT</p>
                                 </div>
                             </div>
                         </div>

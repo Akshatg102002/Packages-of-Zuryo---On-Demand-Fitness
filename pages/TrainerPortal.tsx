@@ -5,12 +5,12 @@ import { Booking, AssessmentData, UserProfile, SessionLog } from '../types';
 import { getTrainerBookings, getUserProfile, saveAssessment, saveSessionLog, markBookingCompleted, getTrainerProfile } from '../services/db';
 import { updateSessionCompletion } from '../services/sheetService';
 import { auth, db } from '../services/firebase';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 import { AssessmentWizard } from '../components/AssessmentWizard';
 
 export const TrainerPortal: React.FC = () => {
-    const navigate = useNavigate();
+    const history = useHistory();
     const { showToast } = useToast();
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [trainerName, setTrainerName] = useState<string>(''); 
@@ -80,7 +80,7 @@ export const TrainerPortal: React.FC = () => {
         setCurrentUser(null);
         setTrainerName('');
         setTrainerEmail('');
-        navigate('/'); 
+        history.push('/'); 
     };
 
     const getNextSession = () => {
@@ -91,7 +91,7 @@ export const TrainerPortal: React.FC = () => {
     const nextSession = getNextSession();
 
     if (view === 'AUTH') {
-        return <TrainerAuth onLogin={() => {}} onBack={() => navigate('/')} />;
+        return <TrainerAuth onLogin={() => {}} onBack={() => history.push('/')} />;
     }
 
     if (view === 'SESSION' && selectedBooking && clientProfile) {
