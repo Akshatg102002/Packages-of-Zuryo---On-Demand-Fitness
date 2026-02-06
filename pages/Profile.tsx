@@ -71,8 +71,26 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
       </button>
   );
 
-  if (!auth.currentUser) return null; // Or Login required view
   if (loading) return <div className="pt-40 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+
+  if (!auth.currentUser) {
+      return (
+        <div className="pt-32 px-6 flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6">
+            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                <Lock size={40} />
+            </div>
+            <div>
+                <h2 className="text-2xl font-extrabold text-secondary mb-2">My Profile</h2>
+                <p className="text-gray-500 max-w-[240px] mx-auto text-sm leading-relaxed">
+                    Log in to view your stats, manage bookings, and update your health profile.
+                </p>
+            </div>
+            <button onClick={onLoginReq} className="bg-primary text-white px-8 py-3.5 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
+                Log In / Sign Up
+            </button>
+        </div>
+      );
+  }
 
   return (
     <div className="pt-8 md:pt-10 px-6 pb-28 min-h-screen max-w-2xl mx-auto relative">
