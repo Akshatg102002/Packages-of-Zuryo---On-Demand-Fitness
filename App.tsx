@@ -176,6 +176,8 @@ export const App: React.FC = () => {
                 <Route path="/bookings" element={<Bookings onLoginReq={openAuth} />} />
                 <Route path="/profile" element={
                     <Profile 
+                        currentUser={currentUser}
+                        userProfile={userProfile}
                         onLogout={handleLogout} 
                         onLoginReq={openAuth} 
                     />

@@ -2,48 +2,44 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserCircle, ShieldCheck, Calendar, Lock, Loader2, X, Ruler, Weight, Activity, Mail, Package, CheckCircle, Headphones, ClipboardList, Clock } from 'lucide-react';
 import { Booking, UserProfile } from '../types';
-import { getBookings, getUserProfile, logoutUser, saveUserProfile } from '../services/db';
-import { auth } from '../services/firebase';
+import { getBookings, saveUserProfile } from '../services/db';
 import { useNavigate } from 'react-router-dom';
-import { submitProfileToSheet } from '../services/sheetService';
 import { useToast } from '../components/ToastContext';
 import { AssessmentWizard } from '../components/AssessmentWizard';
 
 interface ProfileProps {
+    currentUser: any;
+    userProfile: UserProfile | null;
     onLogout: () => void;
     onLoginReq: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
+export const Profile: React.FC<ProfileProps> = ({ currentUser, userProfile, onLogout, onLoginReq }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeModal, setActiveModal] = useState<'PERSONAL' | 'ADDRESS' | 'ASSESSMENT' | null>(null);
 
   const DEFAULT_AVATAR = "https://ui-avatars.com/api/?background=142B5D&color=fff&name=";
 
   useEffect(() => {
-    const loadData = async () => {
-        setLoading(true);
-        if (auth.currentUser) {
-            const profile = await getUserProfile(auth.currentUser.uid);
-            setUserProfile(profile);
-            const userBookings = await getBookings(auth.currentUser.uid);
+    const fetchBookings = async () => {
+        if (currentUser) {
+            setLoading(true);
+            const userBookings = await getBookings(currentUser.uid);
             setBookings(userBookings);
+            setLoading(false);
         }
-        setLoading(false);
     };
-    loadData();
-  }, []);
+    fetchBookings();
+  }, [currentUser]);
 
   const handleUpdateProfile = async (updatedData: Partial<UserProfile>) => {
       if(!userProfile) return;
       try {
           const newProfile = { ...userProfile, ...updatedData };
           await saveUserProfile(newProfile);
-          setUserProfile(newProfile);
           showToast("Profile Updated", "success");
       } catch(e) {
           showToast("Update Failed", "error");
@@ -73,7 +69,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
 
   if (loading) return <div className="pt-40 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
-  if (!auth.currentUser) {
+  if (!currentUser) {
       return (
         <div className="pt-32 px-6 flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6">
             <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
@@ -112,25 +108,13 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-             {userProfile?.activePackage?.isActive ? (
-                 <div className="bg-gradient-to-br from-secondary to-slate-800 text-white p-5 rounded-[24px] border border-white/10 shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full blur-2xl -mr-6 -mt-6"></div>
-                    <div className="w-10 h-10 bg-white/10 text-primary rounded-full flex items-center justify-center mb-2 backdrop-blur-sm">
-                        <Package size={20} />
-                    </div>
-                    {/* No progress tracking shown */}
-                    <p className="text-2xl font-black">Active</p> 
-                    <p className="text-[10px] font-bold opacity-60 uppercase tracking-wide">Package Status</p>
-                 </div>
-             ) : (
-                <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-soft flex flex-col items-center justify-center text-center">
-                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-2">
-                        <Activity size={20} />
-                    </div>
-                    <p className="text-2xl font-black text-secondary">{bookings.length}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Sessions</p>
+            <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-soft flex flex-col items-center justify-center text-center">
+                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-2">
+                    <Activity size={20} />
                 </div>
-             )}
+                <p className="text-2xl font-black text-secondary">{bookings.length}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Sessions</p>
+            </div>
             
             <div className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-soft flex flex-col items-center justify-center text-center">
                 <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-2">
