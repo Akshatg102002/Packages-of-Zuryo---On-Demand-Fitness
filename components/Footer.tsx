@@ -1,18 +1,18 @@
 
 import React from 'react';
-import { Facebook, Twitter, Instagram, Linkedin, MapPin, Mail, Phone, ChevronRight } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Linkedin, MapPin, Mail, Phone, ChevronRight, FileText, Info, PhoneCall } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   const navigate = useNavigate();
 
-  const menuItems = [
-      { label: "Home", path: "/" },
-      { label: "Book Session", path: "/book" },
-      { label: "Find Trainers", path: "/trainers" },
-      { label: "About Us", path: "/about-us" },
-      { label: "My Profile", path: "/profile" },
-      { label: "Policies", path: "/privacy-policy" }
+  const mobileLinks = [
+      { label: "About Us", path: "/about-us", icon: Info },
+      { label: "Terms & Conditions", path: "/terms", icon: FileText },
+      { label: "Privacy Policy", path: "/privacy-policy", icon: FileText },
+      { label: "Refund Policy", path: "/refund-policy", icon: FileText },
+      { label: "POSH Policy", path: "/posh-policy", icon: FileText },
+      { label: "Contact Support", path: "/contact", icon: PhoneCall }
   ];
 
   return (
@@ -96,7 +96,7 @@ export const Footer: React.FC = () => {
         </footer>
 
         {/* Mobile Footer */}
-        <footer className="md:hidden bg-[#0b1736] text-white pt-10 pb-24 px-6 rounded-t-[32px] mt-8">
+        <footer className="md:hidden bg-[#0b1736] text-white pt-10 pb-8 px-6 rounded-t-[32px] mt-8">
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h3 className="font-black text-2xl tracking-tighter">ZURYO</h3>
@@ -108,14 +108,17 @@ export const Footer: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-8">
-                {menuItems.map((item, idx) => (
+            <div className="flex flex-col gap-3 mb-8">
+                {mobileLinks.map((item, idx) => (
                     <button 
                         key={idx} 
                         onClick={() => navigate(item.path)}
                         className="text-left py-3 px-4 bg-white/5 rounded-xl text-sm font-medium text-gray-300 flex items-center justify-between active:scale-95 transition-transform"
                     >
-                        {item.label}
+                        <div className="flex items-center gap-3">
+                            <item.icon size={16} className="text-gray-500" />
+                            {item.label}
+                        </div>
                         <ChevronRight size={14} className="text-gray-600" />
                     </button>
                 ))}
