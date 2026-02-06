@@ -4,7 +4,7 @@ import { MapPin, LogOut, ChevronRight, FileText, Info, Phone, Edit2, Save, UserC
 import { Booking, UserProfile } from '../types';
 import { getBookings, getUserProfile, logoutUser, saveUserProfile } from '../services/db';
 import { auth } from '../services/firebase';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { submitProfileToSheet } from '../services/sheetService';
 import { useToast } from '../components/ToastContext';
 import { AssessmentWizard } from '../components/AssessmentWizard';
@@ -15,7 +15,7 @@ interface ProfileProps {
 }
 
 export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -206,7 +206,7 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
                     icon={<Calendar size={20} />} 
                     label="Booking History" 
                     subLabel="View past and upcoming sessions"
-                    onClick={() => history.push('/bookings')} 
+                    onClick={() => navigate('/bookings')} 
                     badge={bookings.filter(b => b.status === 'confirmed').length > 0 ? `${bookings.filter(b => b.status === 'confirmed').length}` : undefined}
                 />
             )}
@@ -215,9 +215,9 @@ export const Profile: React.FC<ProfileProps> = ({ onLogout, onLoginReq }) => {
         {/* Support & Legal */}
         <div className="mb-8">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-2">Support & Legal</h3>
-            <MenuItem icon={<Info size={20} />} label="About Zuryo" onClick={() => history.push('/about-us')} />
-            <MenuItem icon={<FileText size={20} />} label="Terms & Policies" onClick={() => history.push('/terms')} />
-            <MenuItem icon={<Phone size={20} />} label="Contact Support" onClick={() => history.push('/contact')} />
+            <MenuItem icon={<Info size={20} />} label="About Zuryo" onClick={() => navigate('/about-us')} />
+            <MenuItem icon={<FileText size={20} />} label="Terms & Policies" onClick={() => navigate('/terms')} />
+            <MenuItem icon={<Phone size={20} />} label="Contact Support" onClick={() => navigate('/contact')} />
         </div>
 
         <button onClick={onLogout} className="w-full p-4 bg-red-50 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">

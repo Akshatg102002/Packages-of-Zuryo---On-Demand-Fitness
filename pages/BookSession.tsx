@@ -6,7 +6,7 @@ import { Booking, UserProfile, UserPackage } from '../types';
 import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage } from '../services/db';
 import { submitBookingToSheet, submitPackageToSheet } from '../services/sheetService';
 import firebase from 'firebase/compat/app';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 
 interface BookSessionProps {
@@ -16,7 +16,7 @@ interface BookSessionProps {
 }
 
 export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfile, onLoginReq }) => {
-    const history = useHistory();
+    const navigate = useNavigate();
     const { showToast } = useToast();
     
     // Booking Type State: 'SESSION' (default) or 'PACKAGE'
@@ -278,7 +278,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         
         showToast("Booking Confirmed!", "success");
         setIsProcessing(false);
-        history.push('/bookings');
+        navigate('/bookings');
     };
 
     const finalizePackagePurchase = async (paymentId: string, pkg: { id: string, name: string, price: number, sessions: number }) => {
@@ -304,7 +304,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
         showToast("Package Purchased!", "success");
         setIsProcessing(false);
-        history.push('/profile'); 
+        navigate('/profile'); 
     };
 
     // Step labels
