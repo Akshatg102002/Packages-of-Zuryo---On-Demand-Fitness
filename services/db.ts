@@ -21,7 +21,13 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 export const getAllUsers = async (): Promise<UserProfile[]> => {
     try {
         const snap = await db.collection("users").get();
-        return snap.docs.map(doc => doc.data() as UserProfile);
+        const users = snap.docs.map(doc => doc.data() as UserProfile);
+        // Sort by createdAt descending
+        return users.sort((a, b) => {
+             const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+             const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+             return dateB - dateA;
+        });
     } catch (e) {
         console.error("Error fetching all users", e);
         return [];
@@ -35,6 +41,15 @@ export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
     console.error("Error saving profile", e);
     throw e;
   }
+};
+
+export const deleteUser = async (uid: string): Promise<void> => {
+    try {
+        await db.collection("users").doc(uid).delete();
+    } catch (e) {
+        console.error("Error deleting user", e);
+        throw e;
+    }
 };
 
 export const saveUserPackage = async (userId: string, pkg: UserPackage): Promise<void> => {
@@ -107,6 +122,15 @@ export const updateBooking = async (bookingId: string, updates: Partial<Booking>
     }
 };
 
+export const deleteBooking = async (bookingId: string): Promise<void> => {
+    try {
+        await db.collection("bookings").doc(bookingId).delete();
+    } catch (e) {
+        console.error("Error deleting booking", e);
+        throw e;
+    }
+};
+
 export const cancelBooking = async (bookingId: string): Promise<void> => {
   try {
     await db.collection("bookings").doc(bookingId).update({ status: 'cancelled' });
@@ -169,12 +193,32 @@ export const createTrainerAccount = async (name: string, email: string, pass: st
                 name,
                 email,
                 specialties: ["General Fitness"], // Default
+                price: 499,
+                bio: "Certified Trainer",
                 createdAt: new Date().toISOString()
             });
         }
         await secondaryApp.auth().signOut();
     } catch (e) {
         console.error("Error creating trainer", e);
+        throw e;
+    }
+};
+
+export const updateTrainer = async (uid: string, data: any): Promise<void> => {
+    try {
+        await db.collection("trainers").doc(uid).update(data);
+    } catch (e) {
+        console.error("Error updating trainer", e);
+        throw e;
+    }
+};
+
+export const deleteTrainer = async (uid: string): Promise<void> => {
+    try {
+        await db.collection("trainers").doc(uid).delete();
+    } catch (e) {
+        console.error("Error deleting trainer", e);
         throw e;
     }
 };

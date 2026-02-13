@@ -289,7 +289,7 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
         goals: { fitnessCategory: 'Beginner', riskLevel: 'Low', primaryGoal: client.goal || 'General Fitness', equipmentAvailable: [], trainerNotes: { exercisesToAvoid: '', coachingStyle: 'Motivational', rotationNotes: '' }, sessionOutcome: { completed: false, customerComfort: 'Comfortable', nextSessionFocus: '' } }
     };
 
-    // Use saved assessment or default. If saved is legacy structure, merging might be needed in Wizard, but typically DB just overwrites.
+    // Use saved assessment or default.
     const [assessment, setAssessment] = useState<AssessmentData>(client.latestAssessment && client.latestAssessment.health ? client.latestAssessment : defaultAssessment);
     
     const [closureLog, setClosureLog] = useState<Partial<SessionLog>>({
@@ -298,10 +298,12 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
         activitiesDone: ''
     });
 
+    // LOCK LOGIC: 
+    // Locked if session completed OR if assessment already exists (filled previously)
+    // We check if `client.latestAssessment.health` existed when loaded.
+    const hasExistingAssessment = !!(client.latestAssessment && client.latestAssessment.health && Object.keys(client.latestAssessment.health).length > 0);
     const isSessionClosed = booking.status === 'completed';
-    // Lock if assessment is already "saved"? Logic simplified: Trainer can edit until session closed or explicitly locked. 
-    // For now, let's say they can always update it during the session.
-    const isLocked = isSessionClosed; 
+    const isLocked = isSessionClosed || hasExistingAssessment;
 
     const handleSaveAssessment = async (data: AssessmentData) => {
         try {
@@ -331,7 +333,6 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
                 focusForNext: assessment.goals.sessionOutcome.nextSessionFocus
             };
             await saveSessionLog(client.uid, finalLog);
-            // UPDATED: Pass activitiesDone to markBookingCompleted so it shows in Admin 'Session Log'
             await markBookingCompleted(booking.id, closureLog.activitiesDone || '');
             await updateSessionCompletion(booking.id, closureLog.activitiesDone || '');
             

@@ -26,7 +26,11 @@ service cloud.firestore {
 
     // Trainer Profiles
     match /trainers/{trainerId} {
-      allow write: if request.auth != null && request.auth.uid == trainerId;
+      // Allow write if user is the trainer themself OR if user is the admin
+      allow write: if request.auth != null && (
+        request.auth.uid == trainerId || 
+        request.auth.token.email == 'admin@zuryo.co'
+      );
       allow read: if request.auth != null;
     }
   }

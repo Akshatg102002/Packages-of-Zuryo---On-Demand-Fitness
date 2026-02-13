@@ -93,7 +93,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
              {showNav && <TopNav />}
              
              {/* Adjusted top padding for desktop. Added pb-28 for mobile to clear Fixed Bottom Nav */}
-             <main className="flex-1 w-full h-screen overflow-y-auto no-scrollbar md:pt-28 pb-28 md:pb-0 scroll-smooth relative">
+             <main className="flex-1 w-full h-screen overflow-y-auto no-scrollbar md:pt-28 pb-10 md:pb-0 scroll-smooth relative">
                 {children}
                 <Footer />
              </main>

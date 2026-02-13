@@ -50,7 +50,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onTrainerLogin }) =>
                         name: name,
                         phoneNumber: phone,
                         onboardingComplete: false,
-                        age: '', gender: '', weight: '', height: '', goal: '', activityLevel: '', injuries: ''
+                        age: '', gender: '', weight: '', height: '', goal: '', activityLevel: '', injuries: '',
+                        createdAt: new Date().toISOString()
                     });
                 }
             }

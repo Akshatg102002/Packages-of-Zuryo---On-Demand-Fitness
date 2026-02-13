@@ -174,6 +174,8 @@ export interface UserProfile {
   injuries: string;
   onboardingComplete: boolean;
   walletBalance?: number;
+
+  createdAt?: string;
   
   // Package Data
   activePackage?: UserPackage;
