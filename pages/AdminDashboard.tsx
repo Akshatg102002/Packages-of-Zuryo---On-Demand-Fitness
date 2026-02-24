@@ -5,36 +5,52 @@ import { getAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrain
 import { Booking, UserProfile, AssessmentData } from '../types';
 import { useToast } from '../components/ToastContext';
 import { auth } from '../services/firebase';
+import firebase from 'firebase/compat/app';
 import { AssessmentWizard } from '../components/AssessmentWizard';
 
 type AdminRole = 'SUPER_ADMIN' | 'SUPPORT' | null;
 
 export const AdminDashboard: React.FC = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return localStorage.getItem('zuryo_admin_auth') === 'true';
+    });
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-    const [role, setRole] = useState<AdminRole>(null);
+    const [role, setRole] = useState<AdminRole>(() => {
+        return localStorage.getItem('zuryo_admin_role') as AdminRole;
+    });
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoggingIn, setIsLoggingIn] = useState(false);
 
     useEffect(() => {
+        // Ensure persistence is set to LOCAL
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.error("Persistence error", err));
+
         const unsubscribe = auth.onAuthStateChanged((user) => {
             if (user) {
                 if (user.email === 'admin@zuryo.co') {
                     setRole('SUPER_ADMIN');
                     setIsAuthenticated(true);
+                    localStorage.setItem('zuryo_admin_auth', 'true');
+                    localStorage.setItem('zuryo_admin_role', 'SUPER_ADMIN');
                 } else if (user.email === 'support@zuryo.co') {
                     setRole('SUPPORT');
                     setIsAuthenticated(true);
+                    localStorage.setItem('zuryo_admin_auth', 'true');
+                    localStorage.setItem('zuryo_admin_role', 'SUPPORT');
                 } else {
                     // Not an admin email
                     setIsAuthenticated(false);
                     setRole(null);
+                    localStorage.removeItem('zuryo_admin_auth');
+                    localStorage.removeItem('zuryo_admin_role');
                 }
             } else {
                 setIsAuthenticated(false);
                 setRole(null);
+                localStorage.removeItem('zuryo_admin_auth');
+                localStorage.removeItem('zuryo_admin_role');
             }
             setIsCheckingAuth(false);
         });
@@ -144,6 +160,8 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
     };
 
     const handleLogout = async () => {
+        localStorage.removeItem('zuryo_admin_auth');
+        localStorage.removeItem('zuryo_admin_role');
         await auth.signOut();
         window.location.reload();
     };
