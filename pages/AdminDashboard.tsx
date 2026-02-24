@@ -29,12 +29,13 @@ export const AdminDashboard: React.FC = () => {
 
         const unsubscribe = auth.onAuthStateChanged((user) => {
             if (user) {
-                if (user.email === 'admin@zuryo.co') {
+                const userEmail = user.email?.toLowerCase();
+                if (userEmail === 'admin@zuryo.co') {
                     setRole('SUPER_ADMIN');
                     setIsAuthenticated(true);
                     localStorage.setItem('zuryo_admin_auth', 'true');
                     localStorage.setItem('zuryo_admin_role', 'SUPER_ADMIN');
-                } else if (user.email === 'support@zuryo.co') {
+                } else if (userEmail === 'support@zuryo.co') {
                     setRole('SUPPORT');
                     setIsAuthenticated(true);
                     localStorage.setItem('zuryo_admin_auth', 'true');
@@ -62,43 +63,49 @@ export const AdminDashboard: React.FC = () => {
         setError('');
         setIsLoggingIn(true);
 
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPassword = password.trim();
+
         try {
             // Determine Role based on credentials
             let detectedRole: AdminRole = null;
 
-            if (email === 'admin@zuryo.co' && password === 'Zuryo@0505') {
+            if (cleanEmail === 'admin@zuryo.co' && cleanPassword === 'Zuryo@0505') {
                 detectedRole = 'SUPER_ADMIN';
-            } else if (email === 'support@zuryo.co' && password === 'support123') {
+            } else if (cleanEmail === 'support@zuryo.co' && cleanPassword === 'support123') {
                 detectedRole = 'SUPPORT';
             } else {
-                throw new Error('Invalid Admin Credentials');
+                throw new Error('Invalid Admin Credentials. Please check your email and password.');
             }
 
             // Sync with Firebase Auth for rules permissions
             try {
-                await auth.signInWithEmailAndPassword(email, password);
+                await auth.signInWithEmailAndPassword(cleanEmail, cleanPassword);
             } catch (firebaseErr: any) {
+                console.error("Firebase Auth Error:", firebaseErr.code, firebaseErr.message);
+                
                 // Handle auto-creation for specific admin emails if missing in Firebase
-                if (firebaseErr.code === 'auth/user-not-found' || firebaseErr.code === 'auth/invalid-credential' || firebaseErr.code === 'auth/wrong-password') {
+                if (firebaseErr.code === 'auth/user-not-found' || firebaseErr.code === 'auth/invalid-credential') {
                     try {
-                        // If it's one of our hardcoded admins, try to create if sign in fails with certain errors
-                        // Note: in a real app, you wouldn't auto-create admins like this, but keeping existing logic
-                        await auth.createUserWithEmailAndPassword(email, password);
+                        await auth.createUserWithEmailAndPassword(cleanEmail, cleanPassword);
                     } catch (createErr: any) {
                          if (createErr.code === 'auth/email-already-in-use') {
-                                // If already in use but sign-in failed, it's likely a wrong password
-                                throw new Error("Invalid Password");
+                                throw new Error("This email is already registered in Firebase with a different password. Please use the original password or reset it.");
                          } else {
-                                throw new Error("Firebase Auth Failed: " + createErr.message);
+                                throw new Error("Firebase Account Creation Failed: " + createErr.message);
                          }
                     }
+                } else if (firebaseErr.code === 'auth/wrong-password') {
+                    throw new Error("Invalid Password. The Firebase account for this email has a different password than what is in the code.");
                 } else {
-                    throw firebaseErr;
+                    throw new Error("Firebase Auth Error (" + firebaseErr.code + "): " + firebaseErr.message);
                 }
             }
             
             setRole(detectedRole);
             setIsAuthenticated(true);
+            localStorage.setItem('zuryo_admin_auth', 'true');
+            localStorage.setItem('zuryo_admin_role', detectedRole as string);
         } catch (e: any) {
             setError(e.message || 'Login failed');
         } finally {
