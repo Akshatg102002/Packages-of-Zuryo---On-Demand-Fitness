@@ -24,38 +24,9 @@ export const AdminDashboard: React.FC = () => {
     const [isLoggingIn, setIsLoggingIn] = useState(false);
 
     useEffect(() => {
-        // Ensure persistence is set to LOCAL
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.error("Persistence error", err));
-
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            if (user) {
-                const userEmail = user.email?.toLowerCase();
-                if (userEmail === 'admin@zuryo.co') {
-                    setRole('SUPER_ADMIN');
-                    setIsAuthenticated(true);
-                    localStorage.setItem('zuryo_admin_auth', 'true');
-                    localStorage.setItem('zuryo_admin_role', 'SUPER_ADMIN');
-                } else if (userEmail === 'support@zuryo.co') {
-                    setRole('SUPPORT');
-                    setIsAuthenticated(true);
-                    localStorage.setItem('zuryo_admin_auth', 'true');
-                    localStorage.setItem('zuryo_admin_role', 'SUPPORT');
-                } else {
-                    // Not an admin email
-                    setIsAuthenticated(false);
-                    setRole(null);
-                    localStorage.removeItem('zuryo_admin_auth');
-                    localStorage.removeItem('zuryo_admin_role');
-                }
-            } else {
-                setIsAuthenticated(false);
-                setRole(null);
-                localStorage.removeItem('zuryo_admin_auth');
-                localStorage.removeItem('zuryo_admin_role');
-            }
-            setIsCheckingAuth(false);
-        });
-        return () => unsubscribe();
+        // We no longer sync with Firebase Auth for Admin state as requested.
+        // We rely solely on localStorage for persistence.
+        setIsCheckingAuth(false);
     }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -67,7 +38,7 @@ export const AdminDashboard: React.FC = () => {
         const cleanPassword = password.trim();
 
         try {
-            // Determine Role based on credentials
+            // Determine Role based on credentials (Local Check Only)
             let detectedRole: AdminRole = null;
 
             if (cleanEmail === 'admin@zuryo.co' && cleanPassword === 'Zuryo@0505') {
@@ -78,29 +49,8 @@ export const AdminDashboard: React.FC = () => {
                 throw new Error('Invalid Admin Credentials. Please check your email and password.');
             }
 
-            // Sync with Firebase Auth for rules permissions
-            try {
-                await auth.signInWithEmailAndPassword(cleanEmail, cleanPassword);
-            } catch (firebaseErr: any) {
-                console.error("Firebase Auth Error:", firebaseErr.code, firebaseErr.message);
-                
-                // Handle auto-creation for specific admin emails if missing in Firebase
-                if (firebaseErr.code === 'auth/user-not-found' || firebaseErr.code === 'auth/invalid-credential') {
-                    try {
-                        await auth.createUserWithEmailAndPassword(cleanEmail, cleanPassword);
-                    } catch (createErr: any) {
-                         if (createErr.code === 'auth/email-already-in-use') {
-                                throw new Error("This email is already registered in Firebase with a different password. Please use the original password or reset it.");
-                         } else {
-                                throw new Error("Firebase Account Creation Failed: " + createErr.message);
-                         }
-                    }
-                } else if (firebaseErr.code === 'auth/wrong-password') {
-                    throw new Error("Invalid Password. The Firebase account for this email has a different password than what is in the code.");
-                } else {
-                    throw new Error("Firebase Auth Error (" + firebaseErr.code + "): " + firebaseErr.message);
-                }
-            }
+            // We are NOT calling Firebase Auth here to avoid password mismatch issues.
+            // Note: This requires Firestore rules to be updated to allow access.
             
             setRole(detectedRole);
             setIsAuthenticated(true);
@@ -169,7 +119,7 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
     const handleLogout = async () => {
         localStorage.removeItem('zuryo_admin_auth');
         localStorage.removeItem('zuryo_admin_role');
-        await auth.signOut();
+        // We don't sign out of Firebase here as the admin session is local only
         window.location.reload();
     };
     
