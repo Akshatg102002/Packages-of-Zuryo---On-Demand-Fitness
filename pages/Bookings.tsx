@@ -16,7 +16,7 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
   const { showToast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'rescheduled' | 'cancelled'>('upcoming');
 
   const fetchBookings = async () => {
       if (auth.currentUser) {
@@ -71,6 +71,7 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
       if (activeTab === 'upcoming') return b.status === 'confirmed';
       if (activeTab === 'completed') return b.status === 'completed';
       if (activeTab === 'cancelled') return b.status === 'cancelled';
+      if (activeTab === 'rescheduled') return false; 
       return false;
   });
 
@@ -94,6 +95,12 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
                 active={activeTab === 'completed'} 
                 onClick={() => setActiveTab('completed')} 
                 icon={<CheckCircle size={14} />} 
+            />
+             <TabButton 
+                label="Rescheduled" 
+                active={activeTab === 'rescheduled'} 
+                onClick={() => setActiveTab('rescheduled')} 
+                icon={<RefreshCw size={14} />} 
             />
             <TabButton 
                 label="Cancelled" 
@@ -248,6 +255,17 @@ const BookingCard: React.FC<{
             <div className="mt-auto pt-2">
                 {isConfirmed && (
                     <div className="flex gap-3">
+                        <button 
+                            onClick={() => canModify ? onReschedule(booking.id) : null}
+                            disabled={!canModify}
+                            className={`flex-1 py-3.5 text-xs font-bold flex items-center justify-center gap-2 rounded-xl transition-all border shadow-sm ${
+                                canModify 
+                                ? 'bg-white text-secondary border-gray-200 hover:bg-gray-50 hover:border-gray-300' 
+                                : 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed opacity-70'
+                            }`}
+                        >
+                            <RefreshCw size={14} /> Reschedule
+                        </button>
                         <button 
                             onClick={() => canModify ? onCancel(booking.id) : null}
                             disabled={!canModify}

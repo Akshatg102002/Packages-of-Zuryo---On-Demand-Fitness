@@ -8,6 +8,7 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null;
       allow read: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.token.email == 'admin@zuryo.co';
     }
 
     // Bookings
@@ -22,6 +23,9 @@ service cloud.firestore {
       // We check if the update only touches trainer fields to keep it secure-ish for unauthenticated Sheet calls
       allow update: if request.auth != null || 
                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['trainerName', 'trainerEmail']));
+
+      // Allow delete by admin
+      allow delete: if request.auth != null && request.auth.token.email == 'admin@zuryo.co';
     }
 
     // Trainer Profiles

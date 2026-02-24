@@ -11,11 +11,35 @@ type AdminRole = 'SUPER_ADMIN' | 'SUPPORT' | null;
 
 export const AdminDashboard: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [role, setRole] = useState<AdminRole>(null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                if (user.email === 'admin@zuryo.co') {
+                    setRole('SUPER_ADMIN');
+                    setIsAuthenticated(true);
+                } else if (user.email === 'support@zuryo.co') {
+                    setRole('SUPPORT');
+                    setIsAuthenticated(true);
+                } else {
+                    // Not an admin email
+                    setIsAuthenticated(false);
+                    setRole(null);
+                }
+            } else {
+                setIsAuthenticated(false);
+                setRole(null);
+            }
+            setIsCheckingAuth(false);
+        });
+        return () => unsubscribe();
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,7 +50,7 @@ export const AdminDashboard: React.FC = () => {
             // Determine Role based on credentials
             let detectedRole: AdminRole = null;
 
-            if (email === 'admin@zuryo.co' && password === 'admin123') {
+            if (email === 'admin@zuryo.co' && password === 'Zuryo@0505') {
                 detectedRole = 'SUPER_ADMIN';
             } else if (email === 'support@zuryo.co' && password === 'support123') {
                 detectedRole = 'SUPPORT';
@@ -39,20 +63,21 @@ export const AdminDashboard: React.FC = () => {
                 await auth.signInWithEmailAndPassword(email, password);
             } catch (firebaseErr: any) {
                 // Handle auto-creation for specific admin emails if missing in Firebase
-                if (firebaseErr.code === 'auth/user-not-found' || firebaseErr.code === 'auth/invalid-credential') {
+                if (firebaseErr.code === 'auth/user-not-found' || firebaseErr.code === 'auth/invalid-credential' || firebaseErr.code === 'auth/wrong-password') {
                     try {
+                        // If it's one of our hardcoded admins, try to create if sign in fails with certain errors
+                        // Note: in a real app, you wouldn't auto-create admins like this, but keeping existing logic
                         await auth.createUserWithEmailAndPassword(email, password);
                     } catch (createErr: any) {
                          if (createErr.code === 'auth/email-already-in-use') {
-                                setError("Incorrect password."); // Password mismatch
+                                // If already in use but sign-in failed, it's likely a wrong password
+                                throw new Error("Invalid Password");
                          } else {
-                                throw new Error("Firebase Init Failed: " + createErr.message);
+                                throw new Error("Firebase Auth Failed: " + createErr.message);
                          }
-                         setIsLoggingIn(false);
-                         return;
                     }
-                } else if (firebaseErr.code === 'auth/wrong-password') {
-                     throw new Error("Invalid Password");
+                } else {
+                    throw firebaseErr;
                 }
             }
             
@@ -64,6 +89,14 @@ export const AdminDashboard: React.FC = () => {
             setIsLoggingIn(false);
         }
     };
+
+    if (isCheckingAuth) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
         return (
@@ -104,6 +137,16 @@ export const AdminDashboard: React.FC = () => {
 
 const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
     const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS' | 'TRAINERS'>('BOOKINGS');
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const handleGlobalRefresh = () => {
+        setRefreshTrigger(prev => prev + 1);
+    };
+
+    const handleLogout = async () => {
+        await auth.signOut();
+        window.location.reload();
+    };
     
     return (
         <div className="h-screen flex flex-col bg-gray-50 font-sans text-secondary overflow-hidden">
@@ -118,32 +161,49 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    <div className="flex gap-1 mr-4 border-r border-white/10 pr-4">
+                        <button 
+                            onClick={() => setActiveTab('BOOKINGS')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'BOOKINGS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                        >
+                            <Layout size={14} /> Bookings
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('USERS')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'USERS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                        >
+                            <Users size={14} /> Users
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('TRAINERS')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'TRAINERS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                        >
+                            <Briefcase size={14} /> Trainers
+                        </button>
+                    </div>
+
                     <button 
-                        onClick={() => setActiveTab('BOOKINGS')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'BOOKINGS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                        onClick={handleGlobalRefresh}
+                        className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-primary flex items-center gap-2 text-[10px] font-bold uppercase"
+                        title="Refresh All Data"
                     >
-                        <Layout size={14} /> Bookings
+                        <RefreshCw size={14} /> Refresh
                     </button>
+
                     <button 
-                        onClick={() => setActiveTab('USERS')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'USERS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                        onClick={handleLogout}
+                        className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors flex items-center gap-2 text-[10px] font-bold uppercase"
                     >
-                        <Users size={14} /> Users
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('TRAINERS')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'TRAINERS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
-                    >
-                        <Briefcase size={14} /> Trainers
+                        <RotateCcw size={14} /> Logout
                     </button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-hidden relative">
-                {activeTab === 'BOOKINGS' ? <BookingsManager role={role} /> : 
-                 activeTab === 'USERS' ? <UsersManager role={role} /> : 
-                 <TrainersManager role={role} />}
+                {activeTab === 'BOOKINGS' ? <BookingsManager role={role} refreshTrigger={refreshTrigger} /> : 
+                 activeTab === 'USERS' ? <UsersManager role={role} refreshTrigger={refreshTrigger} /> : 
+                 <TrainersManager role={role} refreshTrigger={refreshTrigger} />}
             </div>
         </div>
     );
@@ -160,7 +220,7 @@ const Badge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 // --- BOOKINGS MANAGER ---
-const BookingsManager: React.FC<{ role: AdminRole }> = ({ role }) => {
+const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ role, refreshTrigger }) => {
     const { showToast } = useToast();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [trainers, setTrainers] = useState<any[]>([]);
@@ -187,19 +247,26 @@ const BookingsManager: React.FC<{ role: AdminRole }> = ({ role }) => {
 
     const loadData = async () => {
         setLoading(true);
-        const [bookingsData, trainersData] = await Promise.all([
-            getAllBookings(),
-            getAllTrainers()
-        ]);
-        setBookings(bookingsData);
-        // Only use DB trainers, do not merge mocks
-        setTrainers(trainersData);
-        setLoading(false);
+        try {
+            const [bookingsData, trainersData] = await Promise.all([
+                getAllBookings(),
+                getAllTrainers()
+            ]);
+            setBookings(bookingsData);
+            setTrainers(trainersData);
+        } catch (err) {
+            console.error("Load data error", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
         loadData();
-    }, []);
+        // Auto refresh every 60 seconds
+        const interval = setInterval(loadData, 60000);
+        return () => clearInterval(interval);
+    }, [refreshTrigger]);
 
     const startQuickEdit = (booking: Booking) => {
         setEditingId(booking.id);
@@ -557,7 +624,7 @@ const BookingsManager: React.FC<{ role: AdminRole }> = ({ role }) => {
 };
 
 // --- TRAINERS MANAGER ---
-const TrainersManager: React.FC<{ role: AdminRole }> = ({ role }) => {
+const TrainersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ role, refreshTrigger }) => {
     const { showToast } = useToast();
     const [trainers, setTrainers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -572,7 +639,6 @@ const TrainersManager: React.FC<{ role: AdminRole }> = ({ role }) => {
 
     const loadTrainers = async () => {
         setLoading(true);
-        // Only fetch from DB, no mocks
         const data = await getAllTrainers();
         setTrainers(data);
         setLoading(false);
@@ -580,7 +646,7 @@ const TrainersManager: React.FC<{ role: AdminRole }> = ({ role }) => {
 
     useEffect(() => {
         loadTrainers();
-    }, []);
+    }, [refreshTrigger]);
 
     const handleCreateTrainer = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -755,7 +821,7 @@ const TrainersManager: React.FC<{ role: AdminRole }> = ({ role }) => {
 };
 
 // --- USERS MANAGER ---
-const UsersManager: React.FC<{ role: AdminRole }> = ({ role }) => {
+const UsersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ role, refreshTrigger }) => {
     const { showToast } = useToast();
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -775,7 +841,7 @@ const UsersManager: React.FC<{ role: AdminRole }> = ({ role }) => {
 
     useEffect(() => {
         loadUsers();
-    }, []);
+    }, [refreshTrigger]);
 
     const handleSaveUser = async () => {
         if (!editUserData) return;
