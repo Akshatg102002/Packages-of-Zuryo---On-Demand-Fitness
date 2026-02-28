@@ -35,11 +35,9 @@ const SplashScreen = () => (
             <div className="absolute w-32 h-32 border-t-4 border-primary rounded-full animate-[spin_1s_linear_infinite]"></div>
             
             {/* Text Logo */}
-            <img 
-                src="https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg" 
-                alt="Zuryo" 
-                className="w-48 h-auto object-contain relative z-10 select-none animate-in zoom-in duration-1000"
-            />
+            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter relative z-10 select-none">
+                ZURYO
+            </h1>
         </div>
         <div className="mt-8 flex flex-col items-center gap-2">
             <div className="h-1 w-20 bg-white/10 rounded-full overflow-hidden">
