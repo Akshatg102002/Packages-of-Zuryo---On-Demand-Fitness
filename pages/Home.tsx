@@ -50,11 +50,39 @@ export const Home: React.FC = () => {
   }, []);
 
   const FAQ = [
-    { q: "What is Zuryo?", a: "Zuryo is India's first community-based fitness platform bringing certified trainers to your doorstep in 60 minutes. We focus on convenience and quality." },
-    { q: "Do I need equipment?", a: "No! Our trainers carry necessary functional equipment. If you have a gym in your complex, we can use that too." },
-    { q: "Are trainers certified?", a: "Yes, every trainer is vetted, background checked, and certified by reputed institutes like ACE, ACSM, or similar." },
-    { q: "What if I cancel?", a: "Cancellations 2 hours prior are free. Late cancellations incur a small fee to compensate the trainer." },
-  ];
+        {
+            q: "What is Zuryo?",
+            a: "Zuryo is an On Demand Fitness service that lets you book certified fitness trainers inside your apartment gym within 60 minutes — without memberships, contracts, or long-term commitments. You train when you want, as often as you want, and pay only per session."
+        },
+        {
+            q: "What happens in first session?",
+            a: "In your first session, the trainer conducts a fitness assessment covering your goals (fat loss, strength, posture, etc.), fitness level and limitations, past injuries if any, and documents what was done in the session. All details are saved in our internal system for continuity."
+        },
+        {
+            q: "Pricing and Session Details?",
+            a: "Each session costs ₹399. We also offer packages: 12 Sessions for ₹4499 and 16 Sessions for ₹5999. For session tracking, please contact support at 7353762555."
+        },
+        {
+            q: "Training Timings?",
+            a: "Training sessions are available during two time slots: Morning - 5:00 AM to 10:00 AM, and Evening - 5:00 PM to 8:00 PM. You can book any available slot based on your convenience."
+        },
+        {
+            q: "Training Types available?",
+            a: "Weight Loss & Cardio, Strength & Muscle Training, Posture & Mobility Correction"
+        },
+        {
+            q: "Will I get the same trainer everytime?",
+            a: "Not always — and that's by design. Zuryo provides system-driven consistency, not trainer-dependency. This means no cancellations due to trainer unavailability, faster bookings within 60 minutes, and consistent quality through standardized assessments. Any certified trainer can continue your training seamlessly because they have access to your complete fitness profile."
+        },
+        {
+            q: "How Zuryo works differently?",
+            a: "Zuryo uses a system-driven approach where your fitness assessment and progress are stored centrally. Any certified trainer can access your complete fitness profile, ensuring seamless continuity. This eliminates trainer dependency while maintaining consistent quality through standardized assessments and certified professionals."
+        },
+        {
+            q: "Why we dont lock you to one trainer?",
+            a: "This approach ensures no cancellations due to trainer unavailability, faster bookings (within 60 minutes), no dependency on one individual, and consistent quality through standardized assessments. This is how on-demand fitness works at scale — reliable and flexible."
+        }
+    ];
 
   const scrollTestimonials = (direction: 'left' | 'right') => {
       if (scrollRef.current) {
@@ -106,7 +134,7 @@ export const Home: React.FC = () => {
       <header className="px-6 pt-6 flex justify-between items-center md:hidden mb-6">
         <div className="flex items-center gap-3">
              <div className="w-8 h-8 flex items-center justify-center">
-                <img src="https://www.karmisalon.com/wp-content/uploads/2026/01/Zuryo_L.webp" alt="Zuryo" className="w-full h-full object-contain" />
+                <img src="https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg" alt="Zuryo" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col">
                  <span className="text-xl font-black text-secondary tracking-tighter leading-none uppercase">ZURYO</span>

@@ -103,7 +103,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onTrainerLogin }) =>
 
             <div className="w-full max-w-md bg-white relative z-10 animate-in fade-in zoom-in duration-300">
                 <div className="text-center mb-10">
-                    <img src="https://www.karmisalon.com/wp-content/uploads/2026/01/Zuryo_L.webp" className="w-32 h-auto object-contain mx-auto mb-4" alt="Zuryo" />
+                    <img src="https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg" className="w-32 h-auto object-contain mx-auto mb-4" alt="Zuryo" />
                     <h1 className="text-3xl font-extrabold text-secondary">{isLogin ? 'Welcome Back' : 'Join Zuryo'}</h1>
                     <p className="text-gray-500 text-sm mt-2">
                         {isLogin ? 'Login to continue your fitness journey' : 'Start your fitness revolution today'}

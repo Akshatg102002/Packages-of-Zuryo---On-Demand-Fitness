@@ -76,7 +76,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
                     <div className="flex justify-center mb-6">
-                        <div className="w-16 h-16 bg-secondary rounded-xl flex items-center justify-center text-primary font-black text-2xl">Z</div>
+                        <img src="https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg" className="w-24 h-auto object-contain" alt="Zuryo" />
                     </div>
                     <h2 className="text-xl font-black text-center text-secondary mb-6">Admin Console</h2>
                     <form onSubmit={handleLogin} className="space-y-4">
@@ -128,7 +128,9 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
             {/* Admin Header - Compact */}
             <div className="bg-secondary text-white px-4 py-2 shadow-md flex justify-between items-center z-50 shrink-0 h-14">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-secondary font-black text-sm">Z</div>
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                        <img src="https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg" className="w-full h-full object-contain" alt="Z" />
+                    </div>
                     <div>
                         <h1 className="text-base font-black tracking-tight leading-none">Zuryo Admin</h1>
                         <p className="text-[10px] text-primary font-bold uppercase tracking-widest flex items-center gap-1">

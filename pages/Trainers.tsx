@@ -48,8 +48,8 @@ export const Trainers: React.FC = () => {
                   </button>
                   
                   {/* Modal Header Image */}
-                  <div className="relative h-64 md:h-80 w-full">
-                      <img src={selectedTrainer.imageUrl} className="w-full h-full object-cover" alt={selectedTrainer.name} />
+                  <div className="relative h-64 md:h-80 w-full bg-gray-100">
+                      <img src={selectedTrainer.imageUrl} className="w-full h-full object-contain" alt={selectedTrainer.name} />
                       <div className="absolute inset-0 bg-gradient-to-t from-secondary via-transparent to-transparent"></div>
                       <div className="absolute bottom-6 left-6 text-white">
                           <h2 className="text-3xl font-black mb-1">{selectedTrainer.name}</h2>

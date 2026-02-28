@@ -201,12 +201,12 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         }
 
         const options = {
-            key: "rzp_test_1DP5mmOlF5G5ag",
+            key: "rzp_live_S7AbbauY3Jqxga",
             amount: price * 100,
             currency: "INR",
             name: "Zuryo",
             description: desc,
-            image: "https://www.karmisalon.com/wp-content/uploads/2026/01/Zuryo_L.webp",
+            image: "https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg",
             handler: async function (response: any) {
                 if (response.razorpay_payment_id) {
                     if (bookingType === 'SESSION') {
