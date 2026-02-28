@@ -105,8 +105,8 @@ export const getAllBookings = async (): Promise<Booking[]> => {
     try {
         const snap = await db.collection("bookings").get();
         const data = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Booking));
-        // Sort by date descending
-        return data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // Sort by createdAt descending (latest booked on top)
+        return data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     } catch (e) {
         console.error("Error fetching all bookings", e);
         return [];

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key, Loader2, Trash2, Shield, Settings, RotateCcw, ClipboardList, FileText, ArrowRight, Calendar } from 'lucide-react';
 import { getAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser } from '../services/db';
 import { Booking, UserProfile, AssessmentData } from '../types';
@@ -205,6 +205,23 @@ const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     
+    // Notification Logic
+    const prevBookingIds = useRef<Set<string>>(new Set());
+    const isFirstLoad = useRef(true);
+    const notificationSound = useRef<HTMLAudioElement | null>(null);
+
+    useEffect(() => {
+        // Initialize sound
+        notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        notificationSound.current.volume = 0.5;
+    }, []);
+
+    const playNotification = () => {
+        if (notificationSound.current) {
+            notificationSound.current.play().catch(e => console.log("Audio play blocked", e));
+        }
+    };
+
     // Quick Edit State (Status/Trainer)
     const [editingId, setEditingId] = useState<string | null>(null);
     const [quickEditForm, setQuickEditForm] = useState<{ 
@@ -223,12 +240,28 @@ const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = 
     const [loadingAssessment, setLoadingAssessment] = useState(false);
 
     const loadData = async () => {
-        setLoading(true);
+        if (isFirstLoad.current) setLoading(true);
         try {
             const [bookingsData, trainersData] = await Promise.all([
                 getAllBookings(),
                 getAllTrainers()
             ]);
+
+            // Check for new bookings
+            if (!isFirstLoad.current) {
+                const currentIds = new Set(bookingsData.map(b => b.id));
+                const newBookings = bookingsData.filter(b => !prevBookingIds.current.has(b.id));
+                
+                if (newBookings.length > 0) {
+                    playNotification();
+                    showToast(`Received ${newBookings.length} new booking(s)!`, "success");
+                }
+                prevBookingIds.current = currentIds;
+            } else {
+                prevBookingIds.current = new Set(bookingsData.map(b => b.id));
+                isFirstLoad.current = false;
+            }
+
             setBookings(bookingsData);
             setTrainers(trainersData);
         } catch (err) {
