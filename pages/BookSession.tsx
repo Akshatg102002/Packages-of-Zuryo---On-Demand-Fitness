@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Calendar, LocateFixed, Loader2, Clock, MapPin, CheckCircle, CreditCard, Sun, Moon, Sparkles, Star, Package } from 'lucide-react';
 import { CATEGORIES, PACKAGES } from '../constants';
 import { Booking, UserProfile, UserPackage } from '../types';
@@ -171,80 +171,114 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         return false;
     };
 
+    const isProcessingRef = useRef(false);
+
+    const resetProcessing = () => {
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+    };
+
+    // Utility for retrying operations
+    async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+        try {
+            return await operation();
+        } catch (error) {
+            if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return retryOperation(operation, retries - 1, delay * 2);
+            }
+            throw error;
+        }
+    }
+
     const processPayment = async () => {
         if (!currentUser) return;
+        if (isProcessingRef.current) return;
+        
+        isProcessingRef.current = true;
         setIsProcessing(true);
 
-        if (userProfile) {
-            await saveUserProfile({ 
-                ...userProfile, 
-                name: formData.name,
-                phoneNumber: formData.phone,
-                address: formData.address,
-                apartmentName: formData.apartmentName,
-                flatNo: formData.flatNo,
-                gender: formData.gender
-            });
-        }
+        try {
+            if (userProfile) {
+                // Non-blocking profile update
+                saveUserProfile({ 
+                    ...userProfile, 
+                    name: formData.name,
+                    phoneNumber: formData.phone,
+                    address: formData.address,
+                    apartmentName: formData.apartmentName,
+                    flatNo: formData.flatNo,
+                    gender: formData.gender
+                }).catch(e => console.error("Profile update background failed", e));
+            }
 
-        let price = 0;
-        let desc = "";
-        let selectedPkg = null;
+            let price = 0;
+            let desc = "";
+            let selectedPkg = null;
 
-        if (bookingType === 'SESSION') {
-             price = 399;
-             desc = `${CATEGORIES.find(c => c.id === selectedCategory)?.name} Session`;
-        } else {
-             selectedPkg = PACKAGES.find(p => p.id === selectedPackageId);
-             price = selectedPkg?.price || 0;
-             desc = `${selectedPkg?.name} Package`;
-        }
+            if (bookingType === 'SESSION') {
+                 price = 399;
+                 desc = `${CATEGORIES.find(c => c.id === selectedCategory)?.name} Session`;
+            } else {
+                 selectedPkg = PACKAGES.find(p => p.id === selectedPackageId);
+                 price = selectedPkg?.price || 0;
+                 desc = `${selectedPkg?.name} Package`;
+            }
 
-        const options = {
-            key: "rzp_live_S7AbbauY3Jqxga",
-            amount: price * 100,
-            currency: "INR",
-            name: "Zuryo",
-            description: desc,
-            image: "https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg",
-            handler: async function (response: any) {
-                if (response.razorpay_payment_id) {
-                    if (bookingType === 'SESSION') {
-                        await finalizeBooking(response.razorpay_payment_id);
+            const options = {
+                key: "rzp_live_S7AbbauY3Jqxga",
+                amount: price * 100,
+                currency: "INR",
+                name: "Zuryo",
+                description: desc,
+                image: "https://socialfoundationindia.org/wp-content/uploads/2026/02/Zuryo_Updated_Logo.jpeg",
+                handler: async function (response: any) {
+                    if (response.razorpay_payment_id) {
+                        try {
+                            if (bookingType === 'SESSION') {
+                                await finalizeBooking(response.razorpay_payment_id);
+                            } else {
+                                await finalizePackagePurchase(response.razorpay_payment_id, selectedPkg!);
+                            }
+                        } catch (e) {
+                            console.error("Critical: Payment success but finalization failed", e);
+                            showToast("Payment successful but booking failed. Please contact support immediately.", "error");
+                            resetProcessing();
+                        }
                     } else {
-                        await finalizePackagePurchase(response.razorpay_payment_id, selectedPkg!);
+                        resetProcessing();
+                    }
+                },
+                prefill: {
+                    name: formData.name,
+                    contact: formData.phone,
+                    email: formData.email
+                },
+                theme: { color: "#142B5D" },
+                modal: { 
+                    ondismiss: () => {
+                        resetProcessing();
+                        showToast("Payment cancelled", "error");
                     }
                 }
-            },
-            prefill: {
-                name: formData.name,
-                contact: formData.phone,
-                email: formData.email
-            },
-            theme: { color: "#142B5D" },
-            modal: { 
-                ondismiss: () => {
-                    setIsProcessing(false);
-                    showToast("Payment cancelled", "error");
-                }
-            }
-        };
+            };
 
-        try {
             const rzp = new window.Razorpay(options);
             rzp.on('payment.failed', function (response: any){
                 showToast("Payment Failed", "error");
-                setIsProcessing(false);
+                resetProcessing();
             });
             rzp.open();
         } catch (e) {
-            showToast("Payment gateway failed", "error");
-            setIsProcessing(false);
+            showToast("Payment gateway failed to initialize", "error");
+            resetProcessing();
         }
     };
 
     const finalizeBooking = async (paymentId: string) => {
-        if (!currentUser || !selectedCategory || !selectedTime || !selectedDate) return;
+        if (!currentUser || !selectedCategory || !selectedTime || !selectedDate) {
+            throw new Error("Missing booking details");
+        }
 
         let historyNotes = "First Session";
         if (userProfile && userProfile.sessionHistory && userProfile.sessionHistory.length > 0) {
@@ -273,16 +307,21 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
             createdAt: Date.now()
         };
 
-        await addBooking(newBooking);
-        await submitBookingToSheet(newBooking, userProfile);
+        // 1. Critical: Save to Firestore with Retry
+        await retryOperation(() => addBooking(newBooking));
+
+        // 2. Non-blocking: Submit to Sheet (Fire and Forget)
+        submitBookingToSheet(newBooking, userProfile).catch(e => console.error("Sheet sync failed", e));
         
         showToast("Booking Confirmed!", "success");
-        setIsProcessing(false);
+        resetProcessing();
         navigate('/bookings');
     };
 
     const finalizePackagePurchase = async (paymentId: string, pkg: { id: string, name: string, price: number, sessions: number }) => {
-        if (!currentUser || !userProfile) return;
+        if (!currentUser || !userProfile) {
+            throw new Error("User not authenticated");
+        }
 
         const today = new Date();
         const expiry = new Date(today);
@@ -299,11 +338,14 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
             isActive: true
         };
 
-        await saveUserPackage(currentUser.uid, newPackage);
-        await submitPackageToSheet(userProfile, newPackage);
+        // 1. Critical: Save to Firestore with Retry
+        await retryOperation(() => saveUserPackage(currentUser.uid, newPackage));
+
+        // 2. Non-blocking: Submit to Sheet
+        submitPackageToSheet(userProfile, newPackage).catch(e => console.error("Sheet sync failed", e));
 
         showToast("Package Purchased!", "success");
-        setIsProcessing(false);
+        resetProcessing();
         navigate('/profile'); 
     };
 
