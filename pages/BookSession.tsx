@@ -289,7 +289,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         }
 
         const newBooking: Booking = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
             userId: currentUser.uid,
             trainerName: "Matching with Pro...",
             category: CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Fitness',

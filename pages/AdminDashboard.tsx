@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key, Loader2, Trash2, Shield, Settings, RotateCcw, ClipboardList, FileText, ArrowRight, Calendar } from 'lucide-react';
-import { getAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser } from '../services/db';
+import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser } from '../services/db';
 import { Booking, UserProfile, AssessmentData } from '../types';
 import { useToast } from '../components/ToastContext';
 import { auth } from '../services/firebase';
@@ -242,11 +242,19 @@ const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = 
     const loadData = async () => {
         if (isFirstLoad.current) setLoading(true);
         try {
-            const [bookingsData, trainersData] = await Promise.all([
-                getAllBookings(),
-                getAllTrainers()
-            ]);
+            const trainersData = await getAllTrainers();
+            setTrainers(trainersData);
+        } catch (err) {
+            console.error("Load data error", err);
+        } finally {
+            if (isFirstLoad.current) setLoading(false);
+        }
+    };
 
+    useEffect(() => {
+        loadData();
+        
+        const unsubscribe = subscribeToAllBookings((bookingsData) => {
             // Check for new bookings
             if (!isFirstLoad.current) {
                 const currentIds = new Set(bookingsData.map(b => b.id));
@@ -260,22 +268,13 @@ const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = 
             } else {
                 prevBookingIds.current = new Set(bookingsData.map(b => b.id));
                 isFirstLoad.current = false;
+                setLoading(false);
             }
 
             setBookings(bookingsData);
-            setTrainers(trainersData);
-        } catch (err) {
-            console.error("Load data error", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+        });
 
-    useEffect(() => {
-        loadData();
-        // Auto refresh every 60 seconds
-        const interval = setInterval(loadData, 60000);
-        return () => clearInterval(interval);
+        return () => unsubscribe();
     }, [refreshTrigger]);
 
     const startQuickEdit = (booking: Booking) => {

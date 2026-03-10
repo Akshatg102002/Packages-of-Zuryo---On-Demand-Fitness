@@ -113,6 +113,16 @@ export const getAllBookings = async (): Promise<Booking[]> => {
     }
 };
 
+export const subscribeToAllBookings = (callback: (bookings: Booking[]) => void): () => void => {
+    return db.collection("bookings").onSnapshot((snap) => {
+        const data = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Booking));
+        const sortedData = data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        callback(sortedData);
+    }, (error) => {
+        console.error("Error subscribing to bookings", error);
+    });
+};
+
 export const updateBooking = async (bookingId: string, updates: Partial<Booking>): Promise<void> => {
     try {
         await db.collection("bookings").doc(bookingId).update(updates);
