@@ -68,7 +68,7 @@ export const Footer: React.FC = () => {
                 <ul className="space-y-4 text-sm text-gray-400">
                 <li className="flex items-start gap-3">
                     <MapPin size={18} className="shrink-0 text-primary mt-0.5" />
-                    <span className="leading-tight">3rd Floor, ASR Avenue, off Hosa Road, Choodasandra, Kasavanahalli, Bengaluru, Karnataka 560099</span>
+                    <span className="leading-tight">Flat No. 2141, Tower 2, Prestige Ferns Residency, HSR Layout, Bangalore, Bangalore South, Karnataka, India, 560102</span>
                 </li>
                 <li className="flex items-center gap-3">
                     <Mail size={18} className="shrink-0 text-primary" />
@@ -121,7 +121,7 @@ export const Footer: React.FC = () => {
 
             <div className="border-t border-white/10 pt-6 text-center">
                 <p className="text-gray-600 text-[10px] font-medium leading-relaxed max-w-xs mx-auto">
-                    3rd Floor, ASR Avenue, off Hosa Road, Choodasandra, Bengaluru, Karnataka 560099
+                    Flat No. 2141, Tower 2, Prestige Ferns Residency, HSR Layout, Bangalore, Bangalore South, Karnataka, India, 560102
                 </p>
                 <p className="text-gray-700 text-[10px] font-bold mt-4 uppercase tracking-widest">© 2026 Zuryo Tech</p>
             </div>
