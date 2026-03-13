@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key, Loader2, Trash2, Shield, Settings, RotateCcw, ClipboardList, FileText, ArrowRight, Calendar } from 'lucide-react';
-import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser } from '../services/db';
+import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser, addBooking } from '../services/db';
 import { Booking, UserProfile, AssessmentData } from '../types';
 import { useToast } from '../components/ToastContext';
 import { auth } from '../services/firebase';
 import firebase from 'firebase/compat/app';
 import { AssessmentWizard } from '../components/AssessmentWizard';
+import { CATEGORIES } from '../constants';
 
 type AdminRole = 'SUPER_ADMIN' | 'SUPPORT' | null;
 
@@ -109,7 +110,7 @@ export const AdminDashboard: React.FC = () => {
 };
 
 const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
-    const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS' | 'TRAINERS'>('BOOKINGS');
+    const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS' | 'TRAINERS' | 'CREATE_BOOKING'>('BOOKINGS');
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleGlobalRefresh = () => {
@@ -158,6 +159,12 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
                         >
                             <Briefcase size={14} /> Trainers
                         </button>
+                        <button 
+                            onClick={() => setActiveTab('CREATE_BOOKING')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'CREATE_BOOKING' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                        >
+                            <Plus size={14} /> Create Booking
+                        </button>
                     </div>
 
                     <button 
@@ -180,6 +187,7 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
             <div className="flex-1 overflow-hidden relative">
                 {activeTab === 'BOOKINGS' ? <BookingsManager role={role} refreshTrigger={refreshTrigger} /> : 
                  activeTab === 'USERS' ? <UsersManager role={role} refreshTrigger={refreshTrigger} /> : 
+                 activeTab === 'CREATE_BOOKING' ? <CreateBookingManager /> :
                  <TrainersManager role={role} refreshTrigger={refreshTrigger} />}
             </div>
         </div>
@@ -1111,6 +1119,246 @@ const UsersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ 
                     <div className="h-full flex flex-col items-center justify-center text-gray-400 text-center p-8">
                         <Users size={32} className="mb-2 opacity-20" />
                         <p className="font-bold text-xs">Select user to view details</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- CREATE BOOKING MANAGER ---
+const CreateBookingManager: React.FC = () => {
+    const { showToast } = useToast();
+    const [users, setUsers] = useState<UserProfile[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Form State
+    const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0].id);
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [selectedTime, setSelectedTime] = useState('06:00 AM');
+    const [apartmentName, setApartmentName] = useState('');
+    const [flatNo, setFlatNo] = useState('');
+    const [address, setAddress] = useState('');
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const usersData = await getAllUsers();
+                setUsers(usersData);
+            } catch (err) {
+                console.error("Error fetching users", err);
+                showToast("Failed to load users", "error");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    const filteredUsers = users.filter(u => 
+        u.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (u.name && u.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const handleCreateBooking = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedUser) {
+            showToast("Please select a user first", "error");
+            return;
+        }
+        if (!apartmentName || !flatNo || !address) {
+            showToast("Please fill in all location details", "error");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const newBooking: Booking = {
+                id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                userId: selectedUser.uid,
+                trainerName: "Matching with Pro...",
+                category: CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Fitness',
+                date: new Date(selectedDate).toISOString(),
+                time: selectedTime,
+                status: 'confirmed',
+                price: 0, // Manual booking, no charge
+                location: `${apartmentName}, ${flatNo}, ${address}`,
+                apartmentName,
+                flatNo,
+                userName: selectedUser.name || 'Unknown User',
+                userPhone: selectedUser.phone || '',
+                sessionNotes: "Manual Admin Booking",
+                createdAt: Date.now()
+            };
+
+            await addBooking(newBooking);
+            showToast("Booking created successfully!", "success");
+            
+            // Reset form
+            setSelectedUser(null);
+            setSearchTerm('');
+            setApartmentName('');
+            setFlatNo('');
+            setAddress('');
+        } catch (err) {
+            console.error("Error creating booking", err);
+            showToast("Failed to create booking", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const timeSlots = [
+        "05:00 AM", "06:00 AM", "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM",
+        "04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM", "09:00 PM"
+    ];
+
+    return (
+        <div className="h-full flex flex-col md:flex-row bg-gray-50">
+            {/* Left Panel: User Search */}
+            <div className="w-full md:w-1/3 border-r border-gray-200 bg-white flex flex-col h-1/2 md:h-full">
+                <div className="p-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                        <input 
+                            type="text" 
+                            placeholder="Search users by email or name..." 
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-2">
+                    {loading ? (
+                        <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" size={24} /></div>
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="text-center p-8 text-gray-400 text-xs">No users found</div>
+                    ) : (
+                        <div className="space-y-1">
+                            {filteredUsers.map(user => (
+                                <button 
+                                    key={user.uid}
+                                    onClick={() => setSelectedUser(user)}
+                                    className={`w-full text-left p-3 rounded-lg transition-all flex items-center gap-3 ${selectedUser?.uid === user.uid ? 'bg-primary/10 border-primary/30 border' : 'hover:bg-gray-50 border border-transparent'}`}
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs shrink-0">
+                                        {user.name ? user.name.charAt(0).toUpperCase() : <Users size={14} />}
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <div className="font-bold text-secondary text-sm truncate">{user.name || 'Unnamed User'}</div>
+                                        <div className="text-[10px] text-gray-500 truncate">{user.email}</div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Right Panel: Booking Form */}
+            <div className="flex-1 bg-gray-50 overflow-y-auto p-6">
+                {!selectedUser ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400 text-center p-8">
+                        <Calendar size={32} className="mb-2 opacity-20" />
+                        <p className="font-bold text-xs">Select a user to create a booking</p>
+                    </div>
+                ) : (
+                    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div className="mb-6 pb-4 border-b border-gray-100">
+                            <h2 className="text-lg font-black text-secondary">Create Manual Booking</h2>
+                            <p className="text-xs text-gray-500">Booking for: <span className="font-bold text-primary">{selectedUser.email}</span></p>
+                        </div>
+
+                        <form onSubmit={handleCreateBooking} className="space-y-6">
+                            {/* Category */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Category</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {CATEGORIES.map(cat => (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => setSelectedCategory(cat.id)}
+                                            className={`p-3 rounded-xl border text-left transition-all ${selectedCategory === cat.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
+                                        >
+                                            <div className="font-bold text-secondary text-sm">{cat.name}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Date & Time */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Date</label>
+                                    <input 
+                                        type="date" 
+                                        required
+                                        min={new Date().toISOString().split('T')[0]}
+                                        value={selectedDate}
+                                        onChange={(e) => setSelectedDate(e.target.value)}
+                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Time</label>
+                                    <select 
+                                        value={selectedTime}
+                                        onChange={(e) => setSelectedTime(e.target.value)}
+                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                    >
+                                        {timeSlots.map(time => (
+                                            <option key={time} value={time}>{time}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Location */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Location Details</label>
+                                <div className="space-y-3">
+                                    <input 
+                                        type="text" 
+                                        required
+                                        placeholder="Apartment/Society Name"
+                                        value={apartmentName}
+                                        onChange={(e) => setApartmentName(e.target.value)}
+                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                    />
+                                    <input 
+                                        type="text" 
+                                        required
+                                        placeholder="Flat/Villa Number"
+                                        value={flatNo}
+                                        onChange={(e) => setFlatNo(e.target.value)}
+                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                    />
+                                    <input 
+                                        type="text" 
+                                        required
+                                        placeholder="Full Address / Landmark"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <button 
+                                type="submit" 
+                                disabled={isSubmitting}
+                                className="w-full bg-primary text-secondary font-black py-4 rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:translate-y-0"
+                            >
+                                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
+                                {isSubmitting ? 'CREATING...' : 'CREATE BOOKING (NO CHARGE)'}
+                            </button>
+                        </form>
                     </div>
                 )}
             </div>
