@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key, Loader2, Trash2, Shield, Settings, RotateCcw, ClipboardList, FileText, ArrowRight, Calendar } from 'lucide-react';
-import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser, addBooking } from '../services/db';
+import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser, addBooking, getBookings } from '../services/db';
 import { Booking, UserProfile, AssessmentData } from '../types';
 import { useToast } from '../components/ToastContext';
 import { auth } from '../services/firebase';
@@ -1158,6 +1158,52 @@ const CreateBookingManager: React.FC = () => {
         fetchUsers();
     }, []);
 
+    // Fetch user details or previous booking when user is selected
+    useEffect(() => {
+        if (!selectedUser) {
+            setApartmentName('');
+            setFlatNo('');
+            setAddress('');
+            return;
+        }
+
+        const fetchUserDetails = async () => {
+            // First try to use profile data
+            if (selectedUser.apartmentName || selectedUser.flatNo || selectedUser.address) {
+                setApartmentName(selectedUser.apartmentName || '');
+                setFlatNo(selectedUser.flatNo || '');
+                setAddress(selectedUser.address || '');
+                return;
+            }
+
+            // If no profile data, try to fetch from previous bookings
+            try {
+                const userBookings = await getBookings(selectedUser.uid);
+                if (userBookings && userBookings.length > 0) {
+                    const lastBooking = userBookings[0];
+                    setApartmentName(lastBooking.apartmentName || '');
+                    setFlatNo(lastBooking.flatNo || '');
+                    
+                    // Try to extract address from location if not explicitly stored
+                    if (lastBooking.location) {
+                        let extractedAddress = lastBooking.location;
+                        if (lastBooking.apartmentName) {
+                            extractedAddress = extractedAddress.replace(lastBooking.apartmentName, '').replace(/^,\s*/, '');
+                        }
+                        if (lastBooking.flatNo) {
+                            extractedAddress = extractedAddress.replace(lastBooking.flatNo, '').replace(/^,\s*/, '');
+                        }
+                        setAddress(extractedAddress.trim());
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching previous bookings", err);
+            }
+        };
+
+        fetchUserDetails();
+    }, [selectedUser]);
+
     const filteredUsers = users.filter(u => 
         u.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
         (u.name && u.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -1212,8 +1258,10 @@ const CreateBookingManager: React.FC = () => {
     };
 
     const timeSlots = [
-        "05:00 AM", "06:00 AM", "07:00 AM", "08:00 AM", "09:00 AM", "10:00 AM",
-        "04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM", "09:00 PM"
+        "05:00 AM", "05:30 AM", "06:00 AM", "06:30 AM", "07:00 AM", "07:30 AM", 
+        "08:00 AM", "08:30 AM", "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM",
+        "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", 
+        "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM", "09:00 PM", "09:30 PM"
     ];
 
     return (
@@ -1279,16 +1327,20 @@ const CreateBookingManager: React.FC = () => {
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Category</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {CATEGORIES.map(cat => (
-                                        <button
-                                            key={cat.id}
-                                            type="button"
-                                            onClick={() => setSelectedCategory(cat.id)}
-                                            className={`p-3 rounded-xl border text-left transition-all ${selectedCategory === cat.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
-                                        >
-                                            <div className="font-bold text-secondary text-sm">{cat.name}</div>
-                                        </button>
-                                    ))}
+                                    {CATEGORIES.map(cat => {
+                                        const isDisabled = cat.name !== 'Pro Training';
+                                        return (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                disabled={isDisabled}
+                                                onClick={() => setSelectedCategory(cat.id)}
+                                                className={`p-3 rounded-xl border text-left transition-all ${selectedCategory === cat.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-gray-200 hover:border-gray-300'} ${isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
+                                            >
+                                                <div className="font-bold text-secondary text-sm">{cat.name}</div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
