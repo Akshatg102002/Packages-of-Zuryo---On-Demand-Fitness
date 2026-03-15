@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key, Loader2, Trash2, Shield, Settings, RotateCcw, ClipboardList, FileText, ArrowRight, Calendar } from 'lucide-react';
-import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser, addBooking, getBookings } from '../services/db';
-import { Booking, UserProfile, AssessmentData } from '../types';
+import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser, addBooking, getBookings, getLogs, logError } from '../services/db';
+import { Booking, UserProfile, AssessmentData, ErrorLog } from '../types';
 import { useToast } from '../components/ToastContext';
 import { auth } from '../services/firebase';
 import firebase from 'firebase/compat/app';
@@ -110,7 +110,7 @@ export const AdminDashboard: React.FC = () => {
 };
 
 const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
-    const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS' | 'TRAINERS' | 'CREATE_BOOKING'>('BOOKINGS');
+    const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS' | 'TRAINERS' | 'CREATE_BOOKING' | 'LOGS'>('BOOKINGS');
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const handleGlobalRefresh = () => {
@@ -165,6 +165,12 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
                         >
                             <Plus size={14} /> Create Booking
                         </button>
+                        <button 
+                            onClick={() => setActiveTab('LOGS')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2 ${activeTab === 'LOGS' ? 'bg-primary text-secondary' : 'bg-white/10 hover:bg-white/20'}`}
+                        >
+                            <FileText size={14} /> Logs
+                        </button>
                     </div>
 
                     <button 
@@ -188,6 +194,7 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
                 {activeTab === 'BOOKINGS' ? <BookingsManager role={role} refreshTrigger={refreshTrigger} /> : 
                  activeTab === 'USERS' ? <UsersManager role={role} refreshTrigger={refreshTrigger} /> : 
                  activeTab === 'CREATE_BOOKING' ? <CreateBookingManager /> :
+                 activeTab === 'LOGS' ? <LogsManager refreshTrigger={refreshTrigger} /> :
                  <TrainersManager role={role} refreshTrigger={refreshTrigger} />}
             </div>
         </div>
@@ -1249,8 +1256,17 @@ const CreateBookingManager: React.FC = () => {
             setApartmentName('');
             setFlatNo('');
             setAddress('');
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error creating booking", err);
+            await logError({
+                type: 'ADMIN_BOOKING_FAILED',
+                message: err.message || 'Failed to create manual booking',
+                details: { error: err, selectedUser: selectedUser?.uid, selectedCategory, selectedDate, selectedTime, apartmentName, flatNo, address },
+                userEmail: selectedUser?.email,
+                userPhone: selectedUser?.phone,
+                userName: selectedUser?.name,
+                userId: selectedUser?.uid
+            });
             showToast("Failed to create booking", "error");
         } finally {
             setIsSubmitting(false);
@@ -1414,6 +1430,95 @@ const CreateBookingManager: React.FC = () => {
                     </div>
                 )}
             </div>
+        </div>
+    );
+};
+
+const LogsManager: React.FC<{ refreshTrigger: number }> = ({ refreshTrigger }) => {
+    const [logs, setLogs] = useState<ErrorLog[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            setLoading(true);
+            try {
+                const data = await getLogs();
+                setLogs(data);
+            } catch (error) {
+                console.error("Error fetching logs", error);
+                showToast("Failed to fetch logs", "error");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchLogs();
+    }, [refreshTrigger]);
+
+    if (loading) {
+        return <div className="h-full flex items-center justify-center"><Loader2 className="animate-spin text-primary" size={32} /></div>;
+    }
+
+    return (
+        <div className="h-full flex flex-col bg-gray-50 p-6 overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black text-secondary">System Logs</h2>
+                <div className="text-sm font-bold text-gray-500 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
+                    Total Logs: <span className="text-primary">{logs.length}</span>
+                </div>
+            </div>
+
+            {logs.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                    <CheckCircle size={48} className="mb-4 text-green-400 opacity-50" />
+                    <p className="font-bold">No error logs found</p>
+                    <p className="text-xs mt-1">System is running smoothly</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {logs.map(log => (
+                        <div key={log.id} className="bg-white rounded-xl shadow-sm border border-red-100 p-5 overflow-hidden">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
+                                            {log.type}
+                                        </span>
+                                        <span className="text-xs text-gray-500 font-bold">
+                                            {new Date(log.timestamp).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <h3 className="font-bold text-secondary text-sm">{log.message}</h3>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">User Details</h4>
+                                    <div className="space-y-1 text-sm">
+                                        <p><span className="text-gray-500">Name:</span> <span className="font-bold text-secondary">{log.userName || 'N/A'}</span></p>
+                                        <p><span className="text-gray-500">Email:</span> <span className="font-bold text-secondary">{log.userEmail || 'N/A'}</span></p>
+                                        <p><span className="text-gray-500">Phone:</span> <span className="font-bold text-secondary">{log.userPhone || 'N/A'}</span></p>
+                                        <p><span className="text-gray-500">User ID:</span> <span className="font-mono text-xs text-gray-600">{log.userId || 'N/A'}</span></p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Technical Details</h4>
+                                    <pre className="text-[10px] bg-gray-800 text-green-400 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap max-h-40">
+                                        {(() => {
+                                            try {
+                                                return JSON.stringify(log.details, null, 2);
+                                            } catch (e) {
+                                                return String(log.details);
+                                            }
+                                        })()}
+                                    </pre>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

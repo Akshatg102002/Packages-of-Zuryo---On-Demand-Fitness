@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Calendar, LocateFixed, Loader2, Clock, MapPin, CheckCircle, CreditCard, Sun, Moon, Sparkles, Star, Package } from 'lucide-react';
 import { CATEGORIES, PACKAGES } from '../constants';
 import { Booking, UserProfile, UserPackage } from '../types';
-import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage } from '../services/db';
+import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage, logError } from '../services/db';
 import { submitBookingToSheet, submitPackageToSheet } from '../services/sheetService';
 import firebase from 'firebase/compat/app';
 import { useNavigate } from 'react-router-dom';
@@ -240,8 +240,17 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                             } else {
                                 await finalizePackagePurchase(response.razorpay_payment_id, selectedPkg!);
                             }
-                        } catch (e) {
+                        } catch (e: any) {
                             console.error("Critical: Payment success but finalization failed", e);
+                            await logError({
+                                type: 'BOOKING_FAILED',
+                                message: e.message || 'Payment success but finalization failed',
+                                details: { paymentId: response.razorpay_payment_id, bookingType, selectedCategory, selectedTime, selectedDate, formData },
+                                userEmail: formData.email,
+                                userPhone: formData.phone,
+                                userName: formData.name,
+                                userId: currentUser?.uid
+                            });
                             showToast("Payment successful but booking failed. Please contact support immediately.", "error");
                             resetProcessing();
                         }
@@ -264,12 +273,30 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
             };
 
             const rzp = new window.Razorpay(options);
-            rzp.on('payment.failed', function (response: any){
+            rzp.on('payment.failed', async function (response: any){
+                await logError({
+                    type: 'PAYMENT_FAILED',
+                    message: response.error?.description || 'Payment Failed',
+                    details: { error: response.error, bookingType, selectedCategory, selectedTime, selectedDate, formData },
+                    userEmail: formData.email,
+                    userPhone: formData.phone,
+                    userName: formData.name,
+                    userId: currentUser?.uid
+                });
                 showToast("Payment Failed", "error");
                 resetProcessing();
             });
             rzp.open();
-        } catch (e) {
+        } catch (e: any) {
+            await logError({
+                type: 'PAYMENT_INIT_FAILED',
+                message: e.message || 'Payment gateway failed to initialize',
+                details: { bookingType, selectedCategory, selectedTime, selectedDate, formData },
+                userEmail: formData.email,
+                userPhone: formData.phone,
+                userName: formData.name,
+                userId: currentUser?.uid
+            });
             showToast("Payment gateway failed to initialize", "error");
             resetProcessing();
         }

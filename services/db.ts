@@ -1,7 +1,7 @@
 
 import { db, auth } from './firebase';
 import firebase from 'firebase/compat/app';
-import { Booking, UserProfile, AssessmentData, SessionLog, UserPackage } from '../types';
+import { Booking, UserProfile, AssessmentData, SessionLog, UserPackage, ErrorLog } from '../types';
 
 // --- User Profile Operations ---
 
@@ -280,4 +280,44 @@ export const saveSessionLog = async (userId: string, log: SessionLog): Promise<v
 
 export const logoutUser = async (): Promise<void> => {
   await auth.signOut();
+};
+
+export const logError = async (log: Omit<ErrorLog, 'id' | 'timestamp'>): Promise<void> => {
+  try {
+    const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Sanitize details to prevent Firestore errors (circular refs, undefined, etc)
+    let safeDetails = log.details;
+    try {
+      safeDetails = JSON.parse(JSON.stringify(log.details, (key, value) => {
+        if (value instanceof Error) {
+          return { message: value.message, stack: value.stack, name: value.name };
+        }
+        return value;
+      }));
+    } catch (e) {
+      safeDetails = String(log.details);
+    }
+
+    const errorLog: ErrorLog = {
+      ...log,
+      details: safeDetails,
+      id,
+      timestamp: Date.now(),
+    };
+    await db.collection("error_logs").doc(id).set(errorLog);
+  } catch (e) {
+    console.error("Failed to save error log", e);
+  }
+};
+
+export const getLogs = async (): Promise<ErrorLog[]> => {
+  try {
+    const snap = await db.collection("error_logs").get();
+    const data = snap.docs.map(doc => doc.data() as ErrorLog);
+    return data.sort((a, b) => b.timestamp - a.timestamp);
+  } catch (e) {
+    console.error("Error fetching logs", e);
+    return [];
+  }
 };

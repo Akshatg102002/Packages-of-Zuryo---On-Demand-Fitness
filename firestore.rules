@@ -21,5 +21,10 @@ service cloud.firestore {
     match /trainers/{trainerId} {
       allow read, write: if true;
     }
+
+    // Error Logs
+    match /error_logs/{logId} {
+      allow read, write: if true;
+    }
   }
 }

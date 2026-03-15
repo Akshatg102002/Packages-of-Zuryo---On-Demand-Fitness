@@ -217,3 +217,15 @@ export interface Category {
   bg: string;
   active: boolean; 
 }
+
+export interface ErrorLog {
+  id: string;
+  timestamp: number;
+  type: string; // e.g., 'BOOKING_FAILED'
+  message: string;
+  details: any;
+  userEmail?: string;
+  userPhone?: string;
+  userName?: string;
+  userId?: string;
+}
