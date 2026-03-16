@@ -102,7 +102,7 @@ export interface AssessmentData {
   goals: {
     fitnessCategory: string; 
     riskLevel: string; 
-    primaryGoal: string;
+    primaryGoal: string[];
     equipmentAvailable: string[];
     trainerNotes: {
       exercisesToAvoid: string;

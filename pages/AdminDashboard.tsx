@@ -363,7 +363,28 @@ const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = 
         try {
             const user = await getUserProfile(userId);
             if (user && user.latestAssessment) {
-                setAssessmentModalData(user.latestAssessment);
+                setAssessmentModalData({
+                    ...user.latestAssessment,
+                    basic: user.latestAssessment.basic || {
+                        fullName: user.name,
+                        age: user.age || '',
+                        gender: user.gender || '',
+                        address: {
+                            apartmentName: user.apartmentName || '',
+                            towerBlock: user.address || '',
+                            flatNo: user.flatNo || ''
+                        },
+                        contactNumber: user.phoneNumber || '',
+                        dateOfFirstSession: '',
+                        trainerName: ''
+                    },
+                    goals: {
+                        ...user.latestAssessment.goals,
+                        primaryGoal: Array.isArray(user.latestAssessment.goals?.primaryGoal) 
+                            ? user.latestAssessment.goals.primaryGoal 
+                            : (user.latestAssessment.goals?.primaryGoal ? [user.latestAssessment.goals.primaryGoal as unknown as string] : [])
+                    }
+                });
                 setAssessmentUserId(userId);
             } else {
                 showToast("No assessment found for this user", "error");

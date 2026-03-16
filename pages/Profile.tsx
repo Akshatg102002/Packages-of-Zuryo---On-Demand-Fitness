@@ -248,7 +248,28 @@ export const Profile: React.FC<ProfileProps> = ({ currentUser, userProfile, onLo
                 <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
                     <button onClick={() => setActiveModal(null)} className="absolute top-4 right-4 z-50 bg-white rounded-full p-2 text-secondary shadow-lg"><X size={20} /></button>
                     <AssessmentWizard 
-                        initialData={userProfile.latestAssessment} 
+                        initialData={{
+                            ...userProfile.latestAssessment,
+                            basic: userProfile.latestAssessment.basic || {
+                                fullName: userProfile.name,
+                                age: userProfile.age || '',
+                                gender: userProfile.gender || '',
+                                address: {
+                                    apartmentName: userProfile.apartmentName || '',
+                                    towerBlock: userProfile.address || '',
+                                    flatNo: userProfile.flatNo || ''
+                                },
+                                contactNumber: userProfile.phoneNumber || '',
+                                dateOfFirstSession: '',
+                                trainerName: ''
+                            },
+                            goals: {
+                                ...userProfile.latestAssessment.goals,
+                                primaryGoal: Array.isArray(userProfile.latestAssessment.goals?.primaryGoal) 
+                                    ? userProfile.latestAssessment.goals.primaryGoal 
+                                    : (userProfile.latestAssessment.goals?.primaryGoal ? [userProfile.latestAssessment.goals.primaryGoal as unknown as string] : [])
+                            }
+                        }} 
                         isLocked={true}
                         mode="USER_VIEW"
                     />

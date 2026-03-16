@@ -286,11 +286,25 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
         health: { medicalConditions: [], injuryHistory: [], currentPain: { location: '', painScale: '' }, lifestyle: { sedentaryJob: false, dailyMovement: 'Moderate', sleepQuality: 'Average' }, safetyClearance: { selfDeclaredFit: true, doctorRestrictions: '' } },
         body: { height: client.height || '', weight: client.weight || '', waist: '', hip: '', chest: '', biceps: { left: '', right: '' } },
         evaluation: { posture: 'Neutral', balance: 'Stable', mobility: { hip: 'Avg', ankle: 'Avg', shoulder: 'Avg', spine: 'Avg' }, flexibility: { hamstrings: 'Moderate', hipFlexors: 'Moderate', chest: 'Moderate' }, movementStrength: { squatPattern: 'Stable', lungeStep: 'Stable', pushMovement: 'Stable', coreEngagement: 'Average' }, stamina: { overall: 'Moderate', breathControl: 'Comfortable' } },
-        goals: { fitnessCategory: 'Beginner', riskLevel: 'Low', primaryGoal: client.goal || 'General Fitness', equipmentAvailable: [], trainerNotes: { exercisesToAvoid: '', coachingStyle: 'Motivational', rotationNotes: '' }, sessionOutcome: { completed: false, customerComfort: 'Comfortable', nextSessionFocus: '' } }
+        goals: { fitnessCategory: 'Beginner', riskLevel: 'Low', primaryGoal: [client.goal || 'General Fitness'], equipmentAvailable: [], trainerNotes: { exercisesToAvoid: '', coachingStyle: 'Motivational', rotationNotes: '' }, sessionOutcome: { completed: false, customerComfort: 'Comfortable', nextSessionFocus: '' } }
     };
 
     // Use saved assessment or default.
-    const [assessment, setAssessment] = useState<AssessmentData>(client.latestAssessment && client.latestAssessment.health ? client.latestAssessment : defaultAssessment);
+    const [assessment, setAssessment] = useState<AssessmentData>(() => {
+        if (client.latestAssessment && client.latestAssessment.health) {
+            return {
+                ...client.latestAssessment,
+                basic: client.latestAssessment.basic || defaultAssessment.basic,
+                goals: {
+                    ...client.latestAssessment.goals,
+                    primaryGoal: Array.isArray(client.latestAssessment.goals?.primaryGoal) 
+                        ? client.latestAssessment.goals.primaryGoal 
+                        : (client.latestAssessment.goals?.primaryGoal ? [client.latestAssessment.goals.primaryGoal as unknown as string] : defaultAssessment.goals.primaryGoal)
+                }
+            };
+        }
+        return defaultAssessment;
+    });
     
     const [closureLog, setClosureLog] = useState<Partial<SessionLog>>({
         completed: 'Yes',
