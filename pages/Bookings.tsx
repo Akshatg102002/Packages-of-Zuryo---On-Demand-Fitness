@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, Clock, Trash2, CalendarCheck, Loader2, Lock, ArrowRight, Ban, CheckCircle, RefreshCw, AlertTriangle, MapPin, User, Navigation } from 'lucide-react';
+import { Calendar, Clock, Trash2, CalendarCheck, Loader2, Lock, ArrowRight, Ban, CheckCircle, RefreshCw, AlertTriangle, MapPin, User, Navigation, Info } from 'lucide-react';
 import { Booking } from '../types';
 import { getBookings, cancelBooking } from '../services/db';
 import { auth } from '../services/firebase';
@@ -250,6 +250,17 @@ const BookingCard: React.FC<{
                          <p className="text-sm font-medium text-gray-600 line-clamp-2 leading-tight">{booking.location || 'Home Location'}</p>
                     </div>
                 </div>
+                {booking.sessionNotes && (
+                    <div className="flex items-start gap-3 mt-1 pt-3 border-t border-gray-200/60">
+                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shadow-sm shrink-0">
+                            <Info size={16} />
+                        </div>
+                        <div>
+                             <p className="text-[10px] font-bold text-blue-500 uppercase">Trainer Remarks</p>
+                             <p className="text-xs font-medium text-gray-600 leading-tight mt-0.5">{booking.sessionNotes}</p>
+                        </div>
+                    </div>
+                )}
             </div>
             
             <div className="mt-auto pt-2">

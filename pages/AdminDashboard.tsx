@@ -934,6 +934,37 @@ const UsersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ 
                             className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold outline-none focus:border-secondary"
                         />
                     </div>
+                    {role === 'SUPER_ADMIN' && (
+                        <button 
+                            onClick={() => {
+                                const newUid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                                const newUser: UserProfile = {
+                                    uid: newUid,
+                                    name: '',
+                                    email: '',
+                                    phoneNumber: '',
+                                    gender: '',
+                                    age: '',
+                                    height: '',
+                                    weight: '',
+                                    goal: '',
+                                    activityLevel: '',
+                                    injuries: '',
+                                    address: '',
+                                    apartmentName: '',
+                                    flatNo: '',
+                                    onboardingComplete: false,
+                                    createdAt: new Date().toISOString()
+                                };
+                                setSelectedUser(newUser);
+                                setEditUserData(newUser);
+                                setIsEditingUser(true);
+                            }}
+                            className="bg-secondary text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-primary hover:text-secondary transition-colors"
+                        >
+                            <Plus size={14} /> Create User
+                        </button>
+                    )}
                     <button onClick={loadUsers} className="p-2 bg-gray-100 border border-gray-200 rounded-lg text-secondary hover:bg-gray-200">
                         <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                     </button>

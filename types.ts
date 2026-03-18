@@ -126,7 +126,7 @@ export interface Booking {
   category: string;
   date: string;
   time: string;
-  status: 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'failed';
   price: number;
   location: string; // Full address string
   

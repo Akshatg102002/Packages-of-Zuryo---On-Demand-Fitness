@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Calendar, LocateFixed, Loader2, Clock, MapPin, CheckCircle, CreditCard, Sun, Moon, Sparkles, Star, Package } from 'lucide-react';
 import { CATEGORIES, PACKAGES } from '../constants';
 import { Booking, UserProfile, UserPackage } from '../types';
-import { addBooking, saveUserProfile, checkPhoneDuplicate, saveUserPackage, logError } from '../services/db';
+import { addBooking, updateBookingStatus, saveUserProfile, checkPhoneDuplicate, saveUserPackage, logError } from '../services/db';
 import { submitBookingToSheet, submitPackageToSheet } from '../services/sheetService';
 import firebase from 'firebase/compat/app';
 import { useNavigate } from 'react-router-dom';
@@ -63,10 +63,14 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
     const getNext3Days = () => {
         const days = [];
         const today = new Date();
-        for (let i = 0; i < 3; i++) {
+        let i = 0;
+        while (days.length < 3) {
             const d = new Date(today);
             d.setDate(today.getDate() + i);
-            days.push(d);
+            if (d.getDay() !== 0) { // Skip Sunday
+                days.push(d);
+            }
+            i++;
         }
         return days;
     };
@@ -215,10 +219,41 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
             let price = 0;
             let desc = "";
             let selectedPkg = null;
+            let pendingBookingId = "";
 
             if (bookingType === 'SESSION') {
                  price = 399;
                  desc = `${CATEGORIES.find(c => c.id === selectedCategory)?.name} Session`;
+                 
+                 // Create pending booking
+                 pendingBookingId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                 let historyNotes = "First Session";
+                 if (userProfile && userProfile.sessionHistory && userProfile.sessionHistory.length > 0) {
+                     const lastSession = userProfile.sessionHistory[userProfile.sessionHistory.length - 1];
+                     if (lastSession.nextRecommendation) {
+                         historyNotes = `Goals: ${lastSession.nextRecommendation}`;
+                     } else if (lastSession.activitiesDone) {
+                         historyNotes = `Previous: ${lastSession.activitiesDone}`;
+                     }
+                 }
+                 const pendingBooking: Booking = {
+                     id: pendingBookingId,
+                     userId: currentUser.uid,
+                     trainerName: "Matching with Pro...",
+                     category: CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Fitness',
+                     date: selectedDate!.toISOString(),
+                     time: selectedTime,
+                     status: 'pending',
+                     price: 399,
+                     location: `${formData.apartmentName}, ${formData.flatNo}, ${formData.address}`,
+                     apartmentName: formData.apartmentName,
+                     flatNo: formData.flatNo,
+                     userName: formData.name,
+                     userPhone: formData.phone,
+                     sessionNotes: historyNotes,
+                     createdAt: Date.now()
+                 };
+                 await retryOperation(() => addBooking(pendingBooking));
             } else {
                  selectedPkg = PACKAGES.find(p => p.id === selectedPackageId);
                  price = selectedPkg?.price || 0;
@@ -236,12 +271,15 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                     if (response.razorpay_payment_id) {
                         try {
                             if (bookingType === 'SESSION') {
-                                await finalizeBooking(response.razorpay_payment_id);
+                                await finalizeBooking(pendingBookingId, response.razorpay_payment_id);
                             } else {
                                 await finalizePackagePurchase(response.razorpay_payment_id, selectedPkg!);
                             }
                         } catch (e: any) {
                             console.error("Critical: Payment success but finalization failed", e);
+                            if (bookingType === 'SESSION' && pendingBookingId) {
+                                await updateBookingStatus(pendingBookingId, 'failed', response.razorpay_payment_id).catch(console.error);
+                            }
                             await logError({
                                 type: 'BOOKING_FAILED',
                                 message: e.message || 'Payment success but finalization failed',
@@ -255,6 +293,9 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                             resetProcessing();
                         }
                     } else {
+                        if (bookingType === 'SESSION' && pendingBookingId) {
+                            await updateBookingStatus(pendingBookingId, 'failed').catch(console.error);
+                        }
                         resetProcessing();
                     }
                 },
@@ -265,7 +306,10 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
                 },
                 theme: { color: "#142B5D" },
                 modal: { 
-                    ondismiss: () => {
+                    ondismiss: async () => {
+                        if (bookingType === 'SESSION' && pendingBookingId) {
+                            await updateBookingStatus(pendingBookingId, 'failed').catch(console.error);
+                        }
                         resetProcessing();
                         showToast("Payment cancelled", "error");
                     }
@@ -274,6 +318,9 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
             const rzp = new window.Razorpay(options);
             rzp.on('payment.failed', async function (response: any){
+                if (bookingType === 'SESSION' && pendingBookingId) {
+                    await updateBookingStatus(pendingBookingId, 'failed').catch(console.error);
+                }
                 await logError({
                     type: 'PAYMENT_FAILED',
                     message: response.error?.description || 'Payment Failed',
@@ -302,21 +349,27 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
         }
     };
 
-    const finalizeBooking = async (paymentId: string) => {
+    const finalizeBooking = async (bookingId: string, paymentId: string) => {
         if (!currentUser || !selectedCategory || !selectedTime || !selectedDate) {
             throw new Error("Missing booking details");
         }
 
+        // 1. Critical: Update Firestore with Retry
+        await retryOperation(() => updateBookingStatus(bookingId, 'confirmed', paymentId));
+
+        // 2. Non-blocking: Submit to Sheet (Fire and Forget)
+        // We need to fetch the updated booking to submit to sheet, or just construct it
         let historyNotes = "First Session";
         if (userProfile && userProfile.sessionHistory && userProfile.sessionHistory.length > 0) {
             const lastSession = userProfile.sessionHistory[userProfile.sessionHistory.length - 1];
-            if (lastSession.activitiesDone) {
-                historyNotes = lastSession.activitiesDone;
+            if (lastSession.nextRecommendation) {
+                historyNotes = `Goals: ${lastSession.nextRecommendation}`;
+            } else if (lastSession.activitiesDone) {
+                historyNotes = `Previous: ${lastSession.activitiesDone}`;
             }
         }
-
-        const newBooking: Booking = {
-            id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        const confirmedBooking: Booking = {
+            id: bookingId,
             userId: currentUser.uid,
             trainerName: "Matching with Pro...",
             category: CATEGORIES.find(c => c.id === selectedCategory)?.name || 'Fitness',
@@ -333,12 +386,7 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
             paymentId: paymentId,
             createdAt: Date.now()
         };
-
-        // 1. Critical: Save to Firestore with Retry
-        await retryOperation(() => addBooking(newBooking));
-
-        // 2. Non-blocking: Submit to Sheet (Fire and Forget)
-        submitBookingToSheet(newBooking, userProfile).catch(e => console.error("Sheet sync failed", e));
+        submitBookingToSheet(confirmedBooking, userProfile).catch(e => console.error("Sheet sync failed", e));
         
         showToast("Booking Confirmed!", "success");
         resetProcessing();

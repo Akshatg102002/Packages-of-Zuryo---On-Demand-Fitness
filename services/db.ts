@@ -90,6 +90,17 @@ export const addBooking = async (booking: Booking): Promise<void> => {
   }
 };
 
+export const updateBookingStatus = async (bookingId: string, status: string, paymentId?: string): Promise<void> => {
+  try {
+    const updateData: any = { status };
+    if (paymentId) updateData.paymentId = paymentId;
+    await db.collection("bookings").doc(bookingId).update(updateData);
+  } catch (e) {
+    console.error("Error updating booking status", e);
+    throw e;
+  }
+};
+
 export const getBookings = async (uid: string): Promise<Booking[]> => {
   try {
     const snap = await db.collection("bookings").where("userId", "==", uid).get();
@@ -263,11 +274,15 @@ export const getTrainerBookings = async (trainerEmail: string, trainerName?: str
     }
 };
 
-export const markBookingCompleted = async (bookingId: string, log: string): Promise<void> => {
-    await db.collection("bookings").doc(bookingId).update({ 
+export const markBookingCompleted = async (bookingId: string, log: string, nextRecommendation?: string): Promise<void> => {
+    const updateData: any = {
         status: 'completed',
         sessionLog: log
-    });
+    };
+    if (nextRecommendation) {
+        updateData.sessionNotes = nextRecommendation;
+    }
+    await db.collection("bookings").doc(bookingId).update(updateData);
 };
 
 export const saveAssessment = async (userId: string, assessment: AssessmentData): Promise<void> => {

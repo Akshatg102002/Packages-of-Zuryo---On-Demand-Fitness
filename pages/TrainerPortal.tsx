@@ -309,7 +309,8 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
     const [closureLog, setClosureLog] = useState<Partial<SessionLog>>({
         completed: 'Yes',
         comfortLevel: 'Comfortable',
-        activitiesDone: ''
+        activitiesDone: '',
+        nextRecommendation: ''
     });
 
     // LOCK LOGIC: 
@@ -343,11 +344,11 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
                 completed: closureLog.completed as any,
                 comfortLevel: closureLog.comfortLevel as any,
                 activitiesDone: closureLog.activitiesDone || '',
-                nextRecommendation: '',
+                nextRecommendation: closureLog.nextRecommendation || '',
                 focusForNext: assessment.goals.sessionOutcome.nextSessionFocus
             };
             await saveSessionLog(client.uid, finalLog);
-            await markBookingCompleted(booking.id, closureLog.activitiesDone || '');
+            await markBookingCompleted(booking.id, closureLog.activitiesDone || '', closureLog.nextRecommendation);
             await updateSessionCompletion(booking.id, closureLog.activitiesDone || '');
             
             // Auto-save assessment one last time
@@ -409,6 +410,10 @@ const SessionView: React.FC<{ booking: Booking, client: UserProfile, trainerName
                                 <div>
                                     <label className="text-xs font-bold text-gray-400 uppercase">Activities Done</label>
                                     <textarea className="w-full p-4 mt-2 bg-gray-50 rounded-xl border border-gray-100 h-32 resize-none outline-none" value={closureLog.activitiesDone} onChange={e => setClosureLog({...closureLog, activitiesDone: e.target.value})} placeholder="Warmup, Squats 3x10..." />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Next Session Remarks (For Next Trainer)</label>
+                                    <textarea className="w-full p-4 mt-2 bg-gray-50 rounded-xl border border-gray-100 h-24 resize-none outline-none" value={closureLog.nextRecommendation} onChange={e => setClosureLog({...closureLog, nextRecommendation: e.target.value})} placeholder="Focus on core strength, avoid heavy lifting..." />
                                 </div>
                                 <button onClick={handleFinishSession} disabled={isSubmitting} className="w-full bg-red-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-red-500/20 hover:scale-[1.02] flex items-center justify-center gap-2">
                                     {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : 'Finish & Log'}
