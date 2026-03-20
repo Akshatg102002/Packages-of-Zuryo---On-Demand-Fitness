@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft, Calendar, LocateFixed, Loader2, Clock, MapPin, CheckCircle, CreditCard, Sun, Moon, Sparkles, Star, Package } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Calendar, LocateFixed, Loader2, Clock, MapPin, CheckCircle, CreditCard, Sun, Moon, Sparkles, Star, Package, Info } from 'lucide-react';
 import { CATEGORIES, PACKAGES } from '../constants';
 import { Booking, UserProfile, UserPackage } from '../types';
 import { addBooking, updateBookingStatus, saveUserProfile, checkPhoneDuplicate, saveUserPackage, logError } from '../services/db';
@@ -542,6 +542,18 @@ export const BookSession: React.FC<BookSessionProps> = ({ currentUser, userProfi
 
                     {step === 2 && bookingType === 'SESSION' && (
                         <div className="animate-in slide-in-from-right duration-300">
+                             {userProfile?.sessionHistory && userProfile.sessionHistory.length > 0 && userProfile.sessionHistory[userProfile.sessionHistory.length - 1].nextRecommendation && (
+                                 <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 mb-6 flex items-start gap-3">
+                                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 shrink-0">
+                                         <Info size={16} />
+                                     </div>
+                                     <div>
+                                         <p className="text-[10px] font-bold text-blue-500 uppercase">Goals for this session</p>
+                                         <p className="text-xs font-medium text-secondary mt-0.5">{userProfile.sessionHistory[userProfile.sessionHistory.length - 1].nextRecommendation}</p>
+                                         <p className="text-[10px] text-gray-500 mt-1">Carried forward from your last session's remarks.</p>
+                                     </div>
+                                 </div>
+                             )}
                              <h2 className="text-2xl font-black text-secondary mb-1">When to train?</h2>
                              <div className="flex gap-3 mb-8 overflow-x-auto pb-2 no-scrollbar mt-4">
                                 {next3Days.map((date) => {

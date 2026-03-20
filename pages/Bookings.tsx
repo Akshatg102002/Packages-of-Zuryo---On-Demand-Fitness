@@ -68,9 +68,9 @@ export const Bookings: React.FC<BookingsProps> = ({ onLoginReq }) => {
   }
 
   const filteredBookings = bookings.filter(b => {
-      if (activeTab === 'upcoming') return b.status === 'confirmed';
+      if (activeTab === 'upcoming') return b.status === 'confirmed' || b.status === 'pending';
       if (activeTab === 'completed') return b.status === 'completed';
-      if (activeTab === 'cancelled') return b.status === 'cancelled';
+      if (activeTab === 'cancelled') return b.status === 'cancelled' || b.status === 'failed';
       if (activeTab === 'rescheduled') return false; 
       return false;
   });
@@ -191,21 +191,24 @@ const BookingCard: React.FC<{
     const isConfirmed = booking.status === 'confirmed';
     const isCancelled = booking.status === 'cancelled';
     const isCompleted = booking.status === 'completed';
+    const isPending = booking.status === 'pending';
+    const isFailed = booking.status === 'failed';
 
     return (
         <div className={`p-6 rounded-[32px] transition-all border flex flex-col gap-4 relative overflow-hidden group h-full shadow-lg ${
-            isCancelled ? 'bg-red-50/50 border-red-100 opacity-80 grayscale-[0.5]' : 'bg-white border-white/20 hover:-translate-y-1'
+            isCancelled || isFailed ? 'bg-red-50/50 border-red-100 opacity-80 grayscale-[0.5]' : 'bg-white border-white/20 hover:-translate-y-1'
         }`}>
             {/* Background Decor */}
             <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 opacity-20 pointer-events-none ${
-                isConfirmed ? 'bg-blue-400' : isCancelled ? 'bg-red-400' : 'bg-green-400'
+                isConfirmed ? 'bg-blue-400' : (isCancelled || isFailed) ? 'bg-red-400' : isPending ? 'bg-orange-400' : 'bg-green-400'
             }`}></div>
 
             <div className="flex justify-between items-start relative z-10">
                 <div className="flex gap-4">
                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-white/50 backdrop-blur-sm ${
                         isConfirmed ? 'bg-blue-50 text-blue-600' : 
-                        isCancelled ? 'bg-red-50 text-red-500' :
+                        (isCancelled || isFailed) ? 'bg-red-50 text-red-500' :
+                        isPending ? 'bg-orange-50 text-orange-500' :
                         'bg-green-50 text-green-600'
                     }`}>
                         <Calendar size={24} />
@@ -223,7 +226,8 @@ const BookingCard: React.FC<{
                 
                 <div className={`text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-wide border shadow-sm ${
                     isConfirmed ? 'bg-green-100 text-green-800 border-green-200' : 
-                    isCancelled ? 'bg-red-100 text-red-700 border-red-200' : 
+                    (isCancelled || isFailed) ? 'bg-red-100 text-red-700 border-red-200' : 
+                    isPending ? 'bg-orange-100 text-orange-800 border-orange-200' :
                     'bg-gray-100 text-gray-600 border-gray-200'
                 }`}>
                     {booking.status}

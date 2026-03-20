@@ -439,9 +439,11 @@ const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = 
                         className="py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold outline-none cursor-pointer"
                     >
                         <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
+                        <option value="failed">Failed</option>
                     </select>
                 </div>
                 <div className="flex gap-2">
@@ -504,9 +506,11 @@ const BookingsManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = 
                                                 value={quickEditForm.status}
                                                 onChange={e => setQuickEditForm({...quickEditForm, status: e.target.value})}
                                             >
+                                                <option value="pending">Pending</option>
                                                 <option value="confirmed">Confirmed</option>
                                                 <option value="completed">Completed</option>
                                                 <option value="cancelled">Cancelled</option>
+                                                <option value="failed">Failed</option>
                                             </select>
                                         ) : (
                                             <Badge status={b.status} />
@@ -934,10 +938,9 @@ const UsersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ 
                             className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold outline-none focus:border-secondary"
                         />
                     </div>
-                    {role === 'SUPER_ADMIN' && (
-                        <button 
-                            onClick={() => {
-                                const newUid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                    <button 
+                        onClick={() => {
+                            const newUid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
                                 const newUser: UserProfile = {
                                     uid: newUid,
                                     name: '',
@@ -964,7 +967,6 @@ const UsersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ 
                         >
                             <Plus size={14} /> Create User
                         </button>
-                    )}
                     <button onClick={loadUsers} className="p-2 bg-gray-100 border border-gray-200 rounded-lg text-secondary hover:bg-gray-200">
                         <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                     </button>
@@ -1030,7 +1032,7 @@ const UsersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ 
             <div className="w-1/3 bg-gray-50 overflow-y-auto p-4 border-l border-gray-200">
                 {selectedUser ? (
                     <div className="space-y-4 animate-in slide-in-from-right duration-300">
-                        {isEditingUser && role === 'SUPER_ADMIN' ? (
+                        {isEditingUser ? (
                             // EDIT MODE
                              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
                                 <h3 className="font-bold text-secondary">Edit User</h3>
@@ -1115,14 +1117,12 @@ const UsersManager: React.FC<{ role: AdminRole, refreshTrigger?: number }> = ({ 
                             // VIEW MODE
                             <>
                                 <div className="text-center bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative">
-                                    {role === 'SUPER_ADMIN' && (
-                                        <button 
-                                            onClick={() => { setEditUserData(selectedUser); setIsEditingUser(true); }}
-                                            className="absolute top-4 right-4 p-2 bg-gray-50 rounded-full hover:bg-gray-100 text-secondary"
-                                        >
-                                            <Edit2 size={14}/>
-                                        </button>
-                                    )}
+                                    <button 
+                                        onClick={() => { setEditUserData(selectedUser); setIsEditingUser(true); }}
+                                        className="absolute top-4 right-4 p-2 bg-gray-50 rounded-full hover:bg-gray-100 text-secondary"
+                                    >
+                                        <Edit2 size={14}/>
+                                    </button>
                                     <div className="w-16 h-16 bg-secondary text-white rounded-full flex items-center justify-center text-2xl font-black mx-auto mb-3 shadow-lg">
                                         {selectedUser.name?.charAt(0) || 'U'}
                                     </div>
