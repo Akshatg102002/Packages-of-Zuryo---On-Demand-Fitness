@@ -15,7 +15,7 @@ export const TrainerPortal: React.FC = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [trainerName, setTrainerName] = useState<string>(''); 
     const [trainerEmail, setTrainerEmail] = useState<string>(''); 
-    const [view, setView] = useState<'AUTH' | 'DASHBOARD' | 'SESSION'>('AUTH');
+    const [view, setView] = useState<'LOADING' | 'AUTH' | 'DASHBOARD' | 'SESSION'>('LOADING');
     const [activeTab, setActiveTab] = useState<'HOME' | 'SCHEDULE'>('HOME');
     const [refreshing, setRefreshing] = useState(false);
     
@@ -84,11 +84,18 @@ export const TrainerPortal: React.FC = () => {
     };
 
     const getNextSession = () => {
-        const confirmed = myBookings.filter(b => b.status === 'confirmed');
-        return confirmed.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+        return myBookings.find(b => b.status === 'confirmed');
     };
 
     const nextSession = getNextSession();
+
+    if (view === 'LOADING') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        );
+    }
 
     if (view === 'AUTH') {
         return <TrainerAuth onLogin={() => {}} onBack={() => navigate('/')} />;

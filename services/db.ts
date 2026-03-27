@@ -267,7 +267,48 @@ export const getTrainerBookings = async (trainerEmail: string, trainerName?: str
         }
 
         const data = Array.from(bookingsMap.values());
-        return data.sort((a, b) => b.createdAt - a.createdAt);
+        return data.sort((a, b) => {
+            const statusOrder: Record<string, number> = {
+                'confirmed': 0,
+                'pending': 1,
+                'completed': 2,
+                'failed': 3,
+                'cancelled': 4
+            };
+            const statusA = statusOrder[a.status] ?? 99;
+            const statusB = statusOrder[b.status] ?? 99;
+            
+            if (statusA !== statusB) return statusA - statusB;
+
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+            
+            if (dateA !== dateB) {
+                if (statusA < 2) {
+                    return dateA - dateB;
+                } else {
+                    return dateB - dateA;
+                }
+            }
+
+            const parseTime = (timeStr: string) => {
+                if (!timeStr) return 0;
+                const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                if (!match) return 0;
+                let hours = parseInt(match[1], 10);
+                const minutes = parseInt(match[2], 10);
+                const period = match[3].toUpperCase();
+                if (period === 'PM' && hours < 12) hours += 12;
+                if (period === 'AM' && hours === 12) hours = 0;
+                return hours * 60 + minutes;
+            };
+
+            if (statusA < 2) {
+                return parseTime(a.time) - parseTime(b.time);
+            } else {
+                return parseTime(b.time) - parseTime(a.time);
+            }
+        });
     } catch(e) {
         console.error("Error fetching trainer bookings", e);
         return [];
