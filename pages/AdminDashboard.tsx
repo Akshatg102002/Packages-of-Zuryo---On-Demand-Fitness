@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Search, Layout, Users, CheckCircle, XCircle, Edit2, Package, MapPin, Eye, Download, Save, ChevronDown, Lock, Plus, Briefcase, Mail, Key, Loader2, Trash2, Shield, Settings, RotateCcw, ClipboardList, FileText, ArrowRight, Calendar } from 'lucide-react';
-import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser, addBooking, getBookings, getLogs, logError } from '../services/db';
+import { getAllBookings, subscribeToAllBookings, getAllUsers, updateBooking, getAllTrainers, createTrainerAccount, updateTrainer, deleteTrainer, saveUserProfile, deleteBooking, getUserProfile, saveAssessment, deleteUser, addBooking, getBookings, getLogs, logError, getMaintenanceMode, setMaintenanceMode } from '../services/db';
 import { Booking, UserProfile, AssessmentData, ErrorLog } from '../types';
 import { useToast } from '../components/ToastContext';
 import { auth } from '../services/firebase';
@@ -112,6 +112,29 @@ export const AdminDashboard: React.FC = () => {
 const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
     const [activeTab, setActiveTab] = useState<'BOOKINGS' | 'USERS' | 'TRAINERS' | 'CREATE_BOOKING' | 'LOGS'>('BOOKINGS');
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [maintenanceMode, setMaintenanceModeState] = useState(false);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        getMaintenanceMode().then(setMaintenanceModeState);
+    }, []);
+
+    const toggleMaintenanceMode = async () => {
+        if (role !== 'SUPER_ADMIN') {
+            showToast("Only Super Admin can toggle maintenance mode", "error");
+            return;
+        }
+        const newMode = !maintenanceMode;
+        if (confirm(`Are you sure you want to turn ${newMode ? 'ON' : 'OFF'} maintenance mode?`)) {
+            try {
+                await setMaintenanceMode(newMode);
+                setMaintenanceModeState(newMode);
+                showToast(`Maintenance mode turned ${newMode ? 'ON' : 'OFF'}`, "success");
+            } catch (e) {
+                showToast("Failed to toggle maintenance mode", "error");
+            }
+        }
+    };
 
     const handleGlobalRefresh = () => {
         setRefreshTrigger(prev => prev + 1);
@@ -172,6 +195,16 @@ const AuthenticatedDashboard: React.FC<{ role: AdminRole }> = ({ role }) => {
                             <FileText size={14} /> Logs
                         </button>
                     </div>
+
+                    {role === 'SUPER_ADMIN' && (
+                        <button 
+                            onClick={toggleMaintenanceMode}
+                            className={`p-2 rounded-lg transition-colors flex items-center gap-2 text-[10px] font-bold uppercase mr-2 ${maintenanceMode ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-white/10 hover:bg-white/20 text-gray-300'}`}
+                            title="Toggle Maintenance Mode"
+                        >
+                            <Settings size={14} /> {maintenanceMode ? 'Maintenance ON' : 'Maintenance OFF'}
+                        </button>
+                    )}
 
                     <button 
                         onClick={handleGlobalRefresh}

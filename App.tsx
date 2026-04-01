@@ -15,14 +15,47 @@ import { ResetPassword } from './pages/ResetPassword';
 import { Onboarding } from './components/Onboarding';
 import { Auth } from './components/Auth';
 import { Footer } from './components/Footer';
-import { logoutUser } from './services/db';
+import { logoutUser, subscribeToMaintenanceMode } from './services/db';
 import { auth, db } from './services/firebase'; 
 import firebase from 'firebase/compat/app';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Wrench } from 'lucide-react';
 import { ToastProvider } from './components/ToastContext';
 
 // Razorpay global
 declare global { interface Window { Razorpay: any; } }
+
+const MaintenanceScreen = () => (
+    <div className="fixed inset-0 z-[300] bg-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-primary animate-bounce">
+            <Wrench size={48} />
+        </div>
+        <h1 className="text-3xl font-black text-secondary mb-4">We are having maintenance</h1>
+        <p className="text-gray-500 max-w-md">
+            We're currently updating our systems to bring you a better experience. 
+            Please check back soon. We apologize for any inconvenience.
+        </p>
+    </div>
+);
+
+const MaintenanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const location = useLocation();
+    const [isMaintenance, setIsMaintenance] = useState(false);
+
+    useEffect(() => {
+        const unsubscribe = subscribeToMaintenanceMode((enabled) => {
+            setIsMaintenance(enabled);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const isExemptRoute = location.pathname.startsWith('/working') || location.pathname.startsWith('/trainer-portal');
+
+    if (isMaintenance && !isExemptRoute) {
+        return <MaintenanceScreen />;
+    }
+
+    return <>{children}</>;
+};
 
 const SplashScreen = () => (
     <div className="fixed inset-0 z-[200] bg-secondary flex flex-col items-center justify-center animate-out fade-out duration-700 delay-2000 fill-mode-forwards pointer-events-none">
@@ -163,39 +196,41 @@ export const App: React.FC = () => {
         
         <AppLayout>
             <PageLoader />
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/book" element={
-                    <BookSession 
-                        currentUser={currentUser} 
-                        userProfile={userProfile} 
-                        onLoginReq={openAuth} 
-                    />
-                } />
-                <Route path="/trainers" element={<Trainers />} />
-                <Route path="/bookings" element={<Bookings onLoginReq={openAuth} />} />
-                <Route path="/profile" element={
-                    <Profile 
-                        currentUser={currentUser}
-                        userProfile={userProfile}
-                        onLogout={handleLogout} 
-                        onLoginReq={openAuth} 
-                    />
-                } />
-                <Route path="/trainer-portal" element={<TrainerPortal />} />
-                <Route path="/working" element={<AdminDashboard />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                
-                {/* Static Pages */}
-                <Route path="/about-us" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy-policy" element={<Policies />} />
-                <Route path="/refund-policy" element={<RefundPolicy />} />
-                <Route path="/posh-policy" element={<POSHPolicy />} />
+            <MaintenanceWrapper>
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/book" element={
+                        <BookSession 
+                            currentUser={currentUser} 
+                            userProfile={userProfile} 
+                            onLoginReq={openAuth} 
+                        />
+                    } />
+                    <Route path="/trainers" element={<Trainers />} />
+                    <Route path="/bookings" element={<Bookings onLoginReq={openAuth} />} />
+                    <Route path="/profile" element={
+                        <Profile 
+                            currentUser={currentUser}
+                            userProfile={userProfile}
+                            onLogout={handleLogout} 
+                            onLoginReq={openAuth} 
+                        />
+                    } />
+                    <Route path="/trainer-portal" element={<TrainerPortal />} />
+                    <Route path="/working" element={<AdminDashboard />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    
+                    {/* Static Pages */}
+                    <Route path="/about-us" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/privacy-policy" element={<Policies />} />
+                    <Route path="/refund-policy" element={<RefundPolicy />} />
+                    <Route path="/posh-policy" element={<POSHPolicy />} />
 
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </MaintenanceWrapper>
         </AppLayout>
 
         {/* Auth Modal */}

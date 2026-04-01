@@ -22,8 +22,13 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Error Logs
+    // Error Logs 
     match /error_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Settings
+    match /settings/{settingId} {
       allow read, write: if true;
     }
   }

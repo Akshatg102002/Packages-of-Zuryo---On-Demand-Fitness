@@ -377,3 +377,37 @@ export const getLogs = async (): Promise<ErrorLog[]> => {
     return [];
   }
 };
+
+export const getMaintenanceMode = async (): Promise<boolean> => {
+  try {
+    const doc = await db.collection("settings").doc("general").get();
+    if (doc.exists) {
+      return doc.data()?.maintenanceMode || false;
+    }
+    return false;
+  } catch (e) {
+    console.error("Error fetching maintenance mode", e);
+    return false;
+  }
+};
+
+export const setMaintenanceMode = async (enabled: boolean): Promise<void> => {
+  try {
+    await db.collection("settings").doc("general").set({ maintenanceMode: enabled }, { merge: true });
+  } catch (e) {
+    console.error("Error setting maintenance mode", e);
+    throw e;
+  }
+};
+
+export const subscribeToMaintenanceMode = (callback: (enabled: boolean) => void): () => void => {
+  return db.collection("settings").doc("general").onSnapshot((doc) => {
+    if (doc.exists) {
+      callback(doc.data()?.maintenanceMode || false);
+    } else {
+      callback(false);
+    }
+  }, (error) => {
+    console.error("Error subscribing to maintenance mode", error);
+  });
+};
