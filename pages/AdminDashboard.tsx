@@ -42,7 +42,7 @@ export const AdminDashboard: React.FC = () => {
             // Determine Role based on credentials (Local Check Only)
             let detectedRole: AdminRole = null;
 
-            if (cleanEmail === 'admin@zuryo.co' && cleanPassword === 'Zuryo@0505') {
+            if (cleanEmail === 'admin@zuryo.co' && cleanPassword === 'Zuryo@999Swapnil') {
                 detectedRole = 'SUPER_ADMIN';
             } else if (cleanEmail === 'support@zuryo.co' && cleanPassword === 'support123') {
                 detectedRole = 'SUPPORT';

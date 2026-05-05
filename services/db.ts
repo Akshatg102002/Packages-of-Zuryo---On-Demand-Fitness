@@ -284,11 +284,7 @@ export const getTrainerBookings = async (trainerEmail: string, trainerName?: str
             const dateB = new Date(b.date).getTime();
             
             if (dateA !== dateB) {
-                if (statusA < 2) {
-                    return dateA - dateB;
-                } else {
-                    return dateB - dateA;
-                }
+                return dateB - dateA;
             }
 
             const parseTime = (timeStr: string) => {
@@ -303,11 +299,7 @@ export const getTrainerBookings = async (trainerEmail: string, trainerName?: str
                 return hours * 60 + minutes;
             };
 
-            if (statusA < 2) {
-                return parseTime(a.time) - parseTime(b.time);
-            } else {
-                return parseTime(b.time) - parseTime(a.time);
-            }
+            return parseTime(b.time) - parseTime(a.time);
         });
     } catch(e) {
         console.error("Error fetching trainer bookings", e);
